@@ -759,20 +759,15 @@ function renderLB(){
 }
 
 // Öffnet Scorecard vom Leaderboard aus
-// Wenn ein Spieler ausgewählt ist, wird immer dessen eigene Karte geöffnet
-// Wenn "Für alle eintragen", wird die angeklickte Karte geöffnet
-// Wenn keiner ausgewählt, Hinweis
+// Eigene Karte → editierbar. Fremde Karte → nur lesen.
 function openCardFromLB(clickedId){
   const myId = getMyPlayerId();
   if(!myId){
     showToast('⚠️ Bitte zuerst deinen Namen oben auswählen');
     return;
   }
-  if(myId === '__all__'){
-    openCard(clickedId);
-  } else {
-    openCard(myId);
-  }
+  // Immer die angeklickte Karte öffnen — canEdit() entscheidet ob editierbar
+  openCard(clickedId);
 }
 
 // ── Scorecard ──
@@ -806,8 +801,11 @@ function dismissHint(){
 function renderCard(){
   const p=state.players.find(p=>p.id===CID); if(!p)return;
   const mode=state.round.mode||'stroke';
+  const editable = canEdit(CID);
   document.getElementById('sc-pname').textContent=p.name;
-  document.getElementById('sc-psub').textContent=`HCP ${hd(p.handicap)} · ${state.round.courseName||'–'}`;
+  document.getElementById('sc-psub').textContent= editable
+    ? `HCP ${hd(p.handicap)} · ${state.round.courseName||'–'}`
+    : `HCP ${hd(p.handicap)} · ${state.round.courseName||'–'} · 👁 Nur ansehen`;
   document.getElementById('col4lbl').textContent=mode==='stableford'?'STBL.':'NETTO';
   document.getElementById('pill-netto-lbl').textContent=mode==='stableford'?'Stbl.':'Netto';
   // Hinweis-Banner: nur zeigen wenn noch nicht weggeklickt
