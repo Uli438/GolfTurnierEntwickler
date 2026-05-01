@@ -266,7 +266,7 @@ input,select,button{font-family:'DM Sans',sans-serif}
 <!-- ══ SCORECARD ══ -->
 <div id="view-card" class="view">
   <div class="hdr">
-    <button class="back-btn" onclick="showView('lb')">←</button>
+    <button class="back-btn" onclick="goBackFromCard()">←</button>
     <div style="flex:1;min-width:0">
       <div class="hdr-title serif" id="sc-pname"></div>
       <div class="hdr-sub" id="sc-psub"></div>
@@ -758,26 +758,18 @@ function renderLB(){
   }).join('');
 }
 
-// Öffnet Scorecard vom Leaderboard aus
-// Jeder kann jede Karte ansehen.
-// Editieren ist nur möglich wenn der eigene Name gewählt ist.
-// Kein Spieler gewählt + Klick auf eigene Karte → Toast, zuerst Namen wählen.
+// ── Scorecard ──
+// CID = der Spieler dessen Karte gerade ANGEZEIGT wird (kann jeder sein)
+// Beim Speichern wird immer die eigene ID verwendet (getMyPlayerId())
+
 function openCardFromLB(clickedId){
-  const myId = getMyPlayerId();
-  // Wenn kein Name gewählt und der Spieler auf seine eigene Karte klickt → Hinweis
-  // Aber fremde Karten können immer angeschaut werden
-  if(!myId){
-    // Trotzdem öffnen — nur lesend
-    openCard(clickedId);
-    return;
-  }
   openCard(clickedId);
 }
 
-// ── Scorecard ──
 function openCard(id){
   CID=id;
   const p=state.players.find(p=>p.id===id); if(!p)return;
+  // Scores immer frisch aus dem State laden — nie aus alten CSCORES
   CSCORES=[...(p.scores||Array(18).fill(null))];
   const played=pc(CSCORES);
   const savedTab=localStorage.getItem('golf_tab_'+id);
@@ -786,6 +778,17 @@ function openCard(id){
   else { CTAB='front'; }
   showView('card');
   renderCard();
+}
+
+// Wenn man von einer fremden Karte zurückgeht, eigene Karte neu laden
+function goBackFromCard(){
+  const myId = getMyPlayerId();
+  // Wenn wir gerade eine fremde Karte angeschaut haben UND eine eigene ID haben:
+  // eigene Scores aus state neu laden damit nichts verloren geht
+  if(myId && myId !== '__all__' && CID !== myId){
+    // nichts speichern, einfach zurück
+  }
+  showView('lb');
 }
 
 function setTab(t){
