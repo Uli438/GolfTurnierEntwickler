@@ -759,14 +759,18 @@ function renderLB(){
 }
 
 // Öffnet Scorecard vom Leaderboard aus
-// Eigene Karte → editierbar. Fremde Karte → nur lesen.
+// Jeder kann jede Karte ansehen.
+// Editieren ist nur möglich wenn der eigene Name gewählt ist.
+// Kein Spieler gewählt + Klick auf eigene Karte → Toast, zuerst Namen wählen.
 function openCardFromLB(clickedId){
   const myId = getMyPlayerId();
+  // Wenn kein Name gewählt und der Spieler auf seine eigene Karte klickt → Hinweis
+  // Aber fremde Karten können immer angeschaut werden
   if(!myId){
-    showToast('⚠️ Bitte zuerst deinen Namen oben auswählen');
+    // Trotzdem öffnen — nur lesend
+    openCard(clickedId);
     return;
   }
-  // Immer die angeklickte Karte öffnen — canEdit() entscheidet ob editierbar
   openCard(clickedId);
 }
 
@@ -803,9 +807,7 @@ function renderCard(){
   const mode=state.round.mode||'stroke';
   const editable = canEdit(CID);
   document.getElementById('sc-pname').textContent=p.name;
-  document.getElementById('sc-psub').textContent= editable
-    ? `HCP ${hd(p.handicap)} · ${state.round.courseName||'–'}`
-    : `HCP ${hd(p.handicap)} · ${state.round.courseName||'–'} · 👁 Nur ansehen`;
+  document.getElementById('sc-psub').textContent=`HCP ${hd(p.handicap)} · ${state.round.courseName||'–'}`;
   document.getElementById('col4lbl').textContent=mode==='stableford'?'STBL.':'NETTO';
   document.getElementById('pill-netto-lbl').textContent=mode==='stableford'?'Stbl.':'Netto';
   // Hinweis-Banner: nur zeigen wenn noch nicht weggeklickt
@@ -839,6 +841,19 @@ function renderHoles(){
   const holes=Array.from({length:9},(_,i)=>start+i);
   // Darf dieser Spieler editieren?
   const editable = canEdit(CID);
+
+  // Readonly-Banner ein/ausblenden
+  let roBar = document.getElementById('readonly-bar');
+  if(!roBar){
+    roBar = document.createElement('div');
+    roBar.id = 'readonly-bar';
+    roBar.style.cssText='background:#e3f2fd;border-bottom:2px solid #1565c0;padding:10px 14px;font-size:13px;color:#1565c0;font-weight:700;text-align:center;letter-spacing:.5px';
+    const colHead = document.querySelector('.sc-col-head');
+    if(colHead) colHead.parentNode.insertBefore(roBar, colHead.nextSibling);
+  }
+  roBar.style.display = editable ? 'none' : 'block';
+  roBar.textContent = editable ? '' : '👁 Nur ansehen – du kannst diesen Score nicht bearbeiten';
+
   document.getElementById('sc-holes').innerHTML=holes.map(i=>{
     const pv=par[i]||4, siv=si[i]||i+1, s=CSCORES[i];
     const ex=xStr(i,hcp), bd=s!=null?s-pv:null;
@@ -848,12 +863,14 @@ function renderHoles(){
       ?(sv!=null?`<div class="stbl serif">${sv}</div>`:`<span class="dash">–</span>`)
       :(nd!=null?`<div class="rv serif" style="color:${dc(nd)}">${fmt(nd)}</div><div class="rl" style="color:${dc(nd)}">${dl(nd)}</div>`:`<span class="dash">–</span>`);
     const stepperClass = editable ? 'stepper' : 'stepper locked';
+    const minusClick = editable ? `onclick="step(${i},-1)"` : '';
+    const plusClick  = editable ? `onclick="step(${i},+1)"` : '';
     return`<div class="hole-row${s!=null?' filled':''}" id="hr-${i}">
       <div class="hole-info"><div class="hole-num serif">${i+1}</div><div class="hole-par-si">P${pv}·SI${siv}</div>${exH}</div>
       <div class="${stepperClass}">
-        <button class="st-btn" ontouchstart="" onclick="${editable?`step(${i},-1)`:''}">−</button>
+        <button class="st-btn" ontouchstart="" ${minusClick}>−</button>
         <div class="${s!=null?'st-val':'st-val empty'}" id="sv-${i}">${s!=null?s:'–'}</div>
-        <button class="st-btn" ontouchstart="" onclick="${editable?`step(${i},+1)`:''}">+</button>
+        <button class="st-btn" ontouchstart="" ${plusClick}>+</button>
       </div>
       <div class="hole-result" id="br-${i}">${bd!=null?`<div class="rv serif" style="color:${dc(bd)}">${fmt(bd)}</div><div class="rl" style="color:${dc(bd)}">${dl(bd)}</div>`:`<span class="dash">–</span>`}</div>
       <div class="hole-result" id="ne-${i}">${col4}</div>
@@ -862,7 +879,10 @@ function renderHoles(){
   refreshHalfBar(holes);
   // Speichern-Button je nach Berechtigung
   const btn = document.getElementById('savebtn');
-  if(btn) btn.disabled = !editable;
+  if(btn){
+    btn.disabled = !editable;
+    btn.style.display = editable ? 'block' : 'none';
+  }
 }
 
 function step(idx, delta){
