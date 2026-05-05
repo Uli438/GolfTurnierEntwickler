@@ -1180,10 +1180,8 @@ async function syncOffline(){
   const local=loadLocal();
   if(!local)return;
   try{
-    await Promise.all([
-      window._fbSet('round',local.round||state.round),
-      fbSaveAllPlayers(local.players||state.players)
-    ]);
+    await window._fbSet('round',local.round||state.round);
+    await fbSaveAllPlayers(local.players||state.players);
     state=local;
     clearLocal();
     showToast('📶 Offline-Scores synchronisiert!');
