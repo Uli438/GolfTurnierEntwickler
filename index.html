@@ -1136,14 +1136,29 @@ function toggleTeam(id,team){
   const p=SP.find(p=>p.id===id);if(p)p.team=team;renderPList();
 }
 function updH(id,v){const p=SP.find(p=>p.id===id);if(p)p.handicap=v===''?0:Number(v);}
-function rmP(id){const pl=SP.find(p=>p.id===id);if(!confirm((pl?.name||'Spieler')+' wirklich löschen?'))return;SP=SP.filter(p=>p.id!==id);renderPList();}
+async function rmP(id){
+  const pl=SP.find(p=>p.id===id);
+  if(!confirm((pl?.name||'Spieler')+' wirklich löschen?'))return;
+  SP=SP.filter(p=>p.id!==id);
+  renderPList();
+  // Aus Firebase löschen
+  try{ await window._fbSet('players/'+id, null); }catch(e){}
+}
 function addPlayer(){
   const name=document.getElementById('new-name').value.trim();if(!name)return;
   const hcp=document.getElementById('new-hcp').value;
   SP.push({id:Date.now().toString(),name,handicap:hcp!==''?Number(hcp):0,scores:Array(18).fill(null),team:SP.length%2});
   document.getElementById('new-name').value='';document.getElementById('new-hcp').value='';renderPList();
 }
-function resetScores(){if(!confirm('Alle Scores zurücksetzen?'))return;SP=SP.map(p=>({...p,scores:Array(18).fill(null)}));renderPList();}
+async function resetScores(){
+  if(!confirm('Alle Scores zurücksetzen?'))return;
+  SP=SP.map(p=>({...p,scores:Array(18).fill(null)}));
+  renderPList();
+  try{
+    await Promise.all(SP.map(p=>window._fbSet('players/'+p.id,p)));
+    showToast('✅ Scores zurückgesetzt');
+  }catch(e){showToast('📶 Lokal zurückgesetzt, sync folgt');}
+}
 
 async function saveSetup(){
   for(let i=0;i<18;i++){const p=document.getElementById('par-'+i),s=document.getElementById('si-'+i);if(p)SPAR[i]=Number(p.value)||4;if(s)SSI[i]=Number(s.value)||i+1;}
@@ -1155,6 +1170,9 @@ async function saveSetup(){
   if(trnR>1){if(!state.tournament||state.tournament.totalRounds!==trnR)state.tournament={totalRounds:trnR,currentRound:1,name:cname,rounds:[]};}
   else state.tournament=null;
   try{
+    // Erst alten players-Knoten komplett löschen, dann neu schreiben
+    // Verhindert dass gelöschte Spieler wieder auftauchen
+    await window._fbSet('players', null);
     await window._fbSet('round',state.round);
     await Promise.all(state.players.map(p=>window._fbSet('players/'+p.id,p)));
     await window._fbSet('tournament',state.tournament||null);
