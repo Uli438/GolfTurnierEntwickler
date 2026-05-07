@@ -261,6 +261,20 @@ input,select,button{font-family:'DM Sans',sans-serif}
   <button class="qr-cancel" onclick="stopQrScan()">Abbrechen</button>
 </div>
 
+<!-- ══ ADMIN ══ -->
+<div id="view-admin" class="view">
+  <div class="hdr">
+    <button class="back-btn" onclick="showView('lobby')">←</button>
+    <div class="hdr-title serif">⚙️ Admin · Alle Turniere</div>
+  </div>
+  <div style="padding:16px;padding-bottom:80px">
+    <div style="font-size:10px;color:var(--accent);letter-spacing:2px;font-weight:700;margin-bottom:12px">AKTIVE TURNIERE IN FIREBASE</div>
+    <div id="admin-list">
+      <div style="text-align:center;padding:40px;color:var(--txt3)">⏳ Lade Turniere…</div>
+    </div>
+  </div>
+</div>
+
 <!-- ══ LOBBY ══ -->
 <div id="view-lobby" class="view active">
   <div class="lobby-hero">
@@ -275,7 +289,7 @@ input,select,button{font-family:'DM Sans',sans-serif}
     </div>
     <div class="lobby-card">
       <div class="lobby-card-title">TURNIER BEITRETEN</div>
-      <input class="code-input" id="join-code" placeholder="CODE" maxlength="6" oninput="this.value=this.value.toUpperCase()">
+      <input class="code-input" id="join-code" placeholder="000" maxlength="3" type="number" min="100" max="999" style="letter-spacing:8px">
       <button class="lobby-btn secondary" onclick="joinByCode()">Beitreten →</button>
       <button class="lobby-btn outline" onclick="startQrScan()" style="margin-top:6px">📷 QR-Code scannen</button>
     </div>
@@ -602,10 +616,8 @@ function setSyncDot(s){
 // TURNIER-CODE SYSTEM
 // ═══════════════════════════════════════════════════
 function generateCode(){
-  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code='';
-  for(let i=0;i<6;i++)code+=chars[Math.floor(Math.random()*chars.length)];
-  return code;
+  // 3-stellige Zahl 100-998 (999 ist Admin)
+  return String(Math.floor(Math.random()*899)+100);
 }
 
 // Firebase-Pfad für aktuelles Turnier
@@ -647,9 +659,52 @@ function removeRecent(code){
 }
 
 async function joinByCode(){
-  const code=document.getElementById('join-code').value.trim().toUpperCase();
-  if(code.length<4){showToast('⚠️ Bitte Code eingeben');return;}
+  const code=document.getElementById('join-code').value.trim();
+  if(!code){showToast('⚠️ Bitte Code eingeben');return;}
+  if(code==='999'){showView('admin');renderAdmin();return;}
+  if(code.length!==3||isNaN(code)){showToast('⚠️ Bitte 3-stellige Zahl eingeben');return;}
   await enterTournament(code);
+}
+
+async function renderAdmin(){
+  const el=document.getElementById('admin-list');
+  try{
+    await initFirebaseListeners();
+    const snap=await _fbDB.ref('turniere').get();
+    if(!snap.exists()){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--txt3)">Keine Turniere gefunden</div>';return;}
+    const data=snap.val();
+    const codes=Object.keys(data).sort();
+    el.innerHTML=codes.map(code=>{
+      const trn=data[code];
+      const r=trn.round||{};
+      const pCount=trn.players?Object.keys(trn.players).length:0;
+      return'<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--card);border:2px solid var(--border);border-radius:12px;margin-bottom:8px">'
+        +'<div style="font-size:24px;font-weight:900;color:var(--accent);font-family:'Cormorant Garamond',serif;min-width:48px">'+code+'</div>'
+        +'<div style="flex:1">'
+        +'<div style="font-size:14px;font-weight:700;color:var(--txt)">'+(r.courseName||'–')+'</div>'
+        +'<div style="font-size:10px;color:var(--txt3)">'+(r.date||'')+'  ·  '+pCount+' Spieler  ·  '+(r.mode==='stableford'?'Stableford':'Stroke Play')+'</div>'
+        +'</div>'
+        +'<button onclick="adminEnter(''+code+'')" style="background:var(--accent);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;padding:8px 12px;cursor:pointer">Öffnen</button>'
+        +'<button onclick="adminDelete(''+code+'')" style="background:#ffebee;border:2px solid var(--red);border-radius:8px;color:var(--red);font-size:16px;padding:6px 10px;cursor:pointer;line-height:1">🗑</button>'
+        +'</div>';
+    }).join('');
+  }catch(e){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--red)">⚠️ Firebase nicht erreichbar</div>';}
+}
+
+async function adminEnter(code){
+  await enterTournament(code);
+}
+
+async function adminDelete(code){
+  if(!confirm('Turnier "'+code+'" wirklich löschen?'))return;
+  try{
+    await initFirebaseListeners();
+    await _fbDB.ref('turniere/'+code).remove();
+    showToast('🗑 Turnier '+code+' gelöscht');
+    // Aus Recent entfernen
+    removeRecent(code);
+    renderAdmin();
+  }catch(e){showToast('⚠️ Fehler beim Löschen');}
 }
 
 async function enterTournament(code){
