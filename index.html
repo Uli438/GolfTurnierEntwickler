@@ -434,7 +434,7 @@ input,select,button{font-family:'DM Sans',sans-serif}
 <!-- ══ SETUP ══ -->
 <div id="view-setup" class="view">
   <div class="hdr">
-    <button class="back-btn" onclick="showView(ACTIVE_CODE?'lb':'lobby')">←</button>
+    <button class="back-btn" onclick="backFromSetup()">←</button>
     <div class="hdr-title serif">Einstellungen</div>
   </div>
   <div class="setup-body">
@@ -659,7 +659,7 @@ function removeRecent(code){
 }
 
 async function joinByCode(){
-  const code=document.getElementById('join-code').value.trim();
+  const code=String(document.getElementById('join-code').value).trim();
   if(!code){showToast('⚠️ Bitte Code eingeben');return;}
   if(code==='999'){showView('admin');renderAdmin();return;}
   if(code.length!==3||isNaN(code)){showToast('⚠️ Bitte 3-stellige Zahl eingeben');return;}
@@ -873,6 +873,7 @@ function stopQrScan(){
 // ═══════════════════════════════════════════════════
 // VIEWS
 // ═══════════════════════════════════════════════════
+function backFromSetup(){ showView(ACTIVE_CODE?'lb':'lobby'); }
 function showView(name){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('view-'+name).classList.add('active');
