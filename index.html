@@ -366,7 +366,7 @@ input,select,button{font-family:'DM Sans',sans-serif}
         <div class="qrow">
           <button class="qbtn" onclick="fillStandard()">Standard Par 72</button>
           <button class="qbtn" onclick="fillPar4()">Alle Par 4</button>
-          <button class="qbtn" onclick="fillSIauto()">SI auto</button>
+          <button class="qbtn" onclick="fillSIleer()">SI leer</button>
         </div>
         <div class="heh"><span>LOCH</span><span>PAR</span><span>STROKE-IDX</span></div>
         <div id="hole-rows"></div>
@@ -1108,7 +1108,7 @@ function renderHoleRows(){
 }
 function fillStandard(){SPAR=[...DEFAULT_PAR];SSI=[...DEFAULT_SI];renderHoleRows();}
 function fillPar4(){SPAR=Array(18).fill(4);SPAR.forEach((_,i)=>{const e=document.getElementById('par-'+i);if(e)e.value=4;});}
-function fillSIauto(){SSI=Array.from({length:18},(_,i)=>i+1);SSI.forEach((v,i)=>{const e=document.getElementById('si-'+i);if(e)e.value=v;});}
+function fillSIleer(){SSI=Array(18).fill(null);SSI.forEach((_,i)=>{const e=document.getElementById('si-'+i);if(e)e.value='';});}
 
 function renderPList(){
   const showTeam=S_TEAM_MODE==='fixed';
