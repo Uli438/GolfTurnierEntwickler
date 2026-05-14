@@ -231,6 +231,17 @@ input,select,button{font-family:'DM Sans',sans-serif}
 .ap-p{padding:2px 6px;border-radius:4px;color:#fff;font-size:10px;font-weight:700}
 .cap-hint{font-size:10px;color:#e65100;background:#fff3e0;border:1px solid #ffa000;border-radius:8px;padding:6px 10px;margin-top:6px}
 
+/* EXTRAS AUF SCORECARD */
+.extra-row{display:flex;gap:8px;padding:4px 14px 8px;background:var(--card);border-bottom:1px solid var(--border-light);flex-wrap:wrap}
+.extra-btn{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:20px;border:2px solid var(--border-light);background:var(--card);font-size:11px;font-weight:600;cursor:pointer;color:var(--txt2)}
+.extra-btn.active-bv{background:#ffebee;border-color:var(--red);color:var(--red)}
+.extra-btn.active-la{background:#e3f2fd;border-color:var(--accent);color:var(--accent)}
+.putt-row{display:flex;align-items:center;gap:8px;padding:4px 14px 8px;background:var(--card);border-bottom:1px solid var(--border-light)}
+.putt-lbl{font-size:10px;color:var(--txt3);font-weight:600;min-width:50px}
+.putt-stepper{display:flex;align-items:center;gap:6px}
+.putt-btn{width:32px;height:32px;border-radius:50%;border:2px solid var(--border-light);background:var(--card);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--accent);font-weight:700;line-height:1}
+.putt-val{font-size:16px;font-weight:700;min-width:24px;text-align:center;font-family:'Cormorant Garamond',serif}
+
 /* QR MODAL */
 #qr-modal{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:400;display:none;align-items:center;justify-content:center}
 #qr-modal.show{display:flex}
@@ -250,7 +261,7 @@ input,select,button{font-family:'DM Sans',sans-serif}
     <div style="font-size:9px;color:var(--txt3);letter-spacing:2px;font-weight:700">TURNIER-CODE</div>
     <div class="qr-code" id="qr-code-txt"></div>
     <div class="qr-sub">Code weitergeben zum Beitreten</div>
-    <div class="qr-url">uli438.github.io/GolfTurnierEntwickler</div>
+    <div class="qr-url">uli438.github.io/turniermodus</div>
     <button class="qr-close" id="qr-close-btn">Schließen</button>
   </div>
 </div>
@@ -388,7 +399,7 @@ input,select,button{font-family:'DM Sans',sans-serif}
     <div class="result-card">
       <div class="serif" style="font-size:20px;font-weight:700;margin-bottom:2px" id="res-course"></div>
       <div style="font-size:11px;color:var(--txt2);margin-bottom:16px" id="res-meta"></div>
-      <div class="res-head"><span>#</span><span>SPIELER</span><span style="text-align:center">BRUTTO</span><span style="text-align:center">NETTO</span><span style="text-align:center">STBL.</span><span style="text-align:center">LOCH</span></div>
+      <div class="res-head" id="res-head-row"><span>#</span><span>SPIELER</span><span style="text-align:center">BRUTTO</span><span style="text-align:center">NETTO</span><span style="text-align:center">STBL.</span><span style="text-align:center">LOCH</span></div>
       <div id="res-rows"></div>
     </div>
     <div class="share-btns">
@@ -511,6 +522,25 @@ input,select,button{font-family:'DM Sans',sans-serif}
     </section>
 
     <section>
+      <div class="slabel">⚙️ OPTIONALE FEATURES</div>
+      <div class="shint">Diese Optionen erscheinen beim Score-Eintragen auf der Scorecard.</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card);border:2px solid var(--border-light);border-radius:10px;cursor:pointer">
+          <input type="checkbox" id="opt-ballverlust" style="width:18px;height:18px;cursor:pointer;accent-color:var(--accent)">
+          <div><div style="font-size:13px;font-weight:700">🔴 Ballverlust markieren</div><div style="font-size:10px;color:var(--txt3)">Pro Loch ein Button zum Markieren — nur zur Info, kein Strafschlag</div></div>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card);border:2px solid var(--border-light);border-radius:10px;cursor:pointer">
+          <input type="checkbox" id="opt-ladies" style="width:18px;height:18px;cursor:pointer;accent-color:var(--accent)">
+          <div><div style="font-size:13px;font-weight:700">🚺 Damenabschlag-Button</div><div style="font-size:10px;color:var(--txt3)">Pro Loch markieren wenn der Abschlag nicht über den Damenabschlag kam — Getränk-Schulden-Tracker 🍺</div></div>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card);border:2px solid var(--border-light);border-radius:10px;cursor:pointer">
+          <input type="checkbox" id="opt-putts" style="width:18px;height:18px;cursor:pointer;accent-color:var(--accent)">
+          <div><div style="font-size:13px;font-weight:700">🏌️ Putts pro Loch</div><div style="font-size:10px;color:var(--txt3)">Anzahl Putts auf der Scorecard eintragen — Gesamt-Putts im Leaderboard als Statistik</div></div>
+        </label>
+      </div>
+    </section>
+
+    <section>
       <div class="slabel">🏆 TURNIER (OPTIONAL)</div>
       <div class="shint">Für Einzelrunde leer lassen.</div>
       <select class="inp" id="trn-rounds">
@@ -565,7 +595,7 @@ var G={
   tournament:null,
   round:{courseName:'',par:DPAR.slice(),strokeIndex:DSI.slice(),date:tod(),mode:'stroke',maxScore:null,tee:'',teamMode:'none'}
 };
-var CID=null, CS=Array(18).fill(null), CTAB='front', LBM='brutto', LBV='einzel', TM='bestball';
+var CID=null, CS=Array(18).fill(null), CEXT=Array(18).fill(null).map(function(){return{bv:false,la:false,putts:0};}), CTAB='front', LBM='brutto', LBV='einzel', TM='bestball';
 var pSync=false, aTimer=null;
 var SP=[], SPAR=DPAR.slice(), SSI=DSI.slice(), SAC=null, SAT=null, CTM='manual', SDB=null, STM='none';
 
@@ -639,14 +669,27 @@ function effScore(raw,idx,hcp){
 
 function enrich(p){
   var sc=p.scores||Array(18).fill(null),hcp=Number(p.handicap)||0,par=G.round.par||DPAR;
+  var ext=p.extras||[];
   var pl=pc(sc);
-  // Für Wertung immer gecappten Score verwenden
   var eff=sc.map(function(s,i){return effScore(s,i,hcp);});
-  var br=bt(eff),parP=par.slice(0,pl).reduce(function(a,b){return a+b;},0);
+  // parP = Par der tatsächlich gespielten Löcher (nicht einfach die ersten pl Löcher)
+  var br=bt(eff),parP=eff.reduce(function(a,s,i){return s!=null?a+(par[i]||4):a;},0);
   var bvp=pl>0?br-parP:null;
-  var nvp=pl>0?eff.reduce(function(a,s,i){return s==null?a:a+(netH(s,i,hcp)-par[i]);},0):null;
-  var stp=pl>0?eff.reduce(function(a,s,i){return s==null?a:a+stbl(netH(s,i,hcp),par[i]);},0):null;
-  return Object.assign({},p,{pl:pl,bvp:bvp,nvp:nvp,stp:stp});
+  var nvp=pl>0?eff.reduce(function(a,s,i){
+    if(s==null)return a;
+    return a+(netH(s,i,hcp)-par[i]);
+  },0):null;
+  var stp=pl>0?eff.reduce(function(a,s,i){
+    if(s==null)return a;
+    return a+stbl(netH(s,i,hcp),par[i]);
+  },0):null;
+  // Gesamt-Putts
+  var totalPutts=ext.reduce(function(a,ex){return a+(ex&&ex.putts?ex.putts:0);},0);
+  // Ballverlust-Zähler
+  var totalBV=ext.reduce(function(a,ex){return a+(ex&&ex.bv?1:0);},0);
+  // Ladies-Zähler (Getränke-Schulden)
+  var totalLA=ext.reduce(function(a,ex){return a+(ex&&ex.la?1:0);},0);
+  return Object.assign({},p,{pl:pl,bvp:bvp,nvp:nvp,stp:stp,totalPutts:totalPutts,totalBV:totalBV,totalLA:totalLA});
 }
 
 // ═══════════════════════════════════════════════════
@@ -940,7 +983,7 @@ async function pushFB(){
   if(!navigator.onLine){syncDot('off');pSync=true;return;}
   syncDot('save');
   try{
-    G.players=G.players.map(function(p){return p.id===CID?Object.assign({},p,{scores:CS.slice()}):p;});
+    G.players=G.players.map(function(p){return p.id===CID?Object.assign({},p,{scores:CS.slice(),extras:CEXT.slice()}):p;});
     await fbSet(fp('players/'+CID),G.players.find(function(p){return p.id===CID;}));
     clearLoc(CID);pSync=false;syncDot('on');
   }catch(e){syncDot('off');pSync=true;}
@@ -1001,9 +1044,15 @@ function renderLB(){
     else if(LBM==='brutto'&&p.bvp!=null){dv=fmt(p.bvp);dco=dc(p.bvp);}
     var tm=G.round.teamMode||'none';
     var tco=tm!=='none'&&p.team!=null?TC[p.team]:'transparent';
+    var opts2=G.round.options||{};
+    var subInfo=[];
+    if(p.pl>0)subInfo.push(p.pl+'/18');
+    if(opts2.putts&&p.totalPutts>0)subInfo.push('🏌️'+p.totalPutts+'P');
+    if(opts2.ballverlust&&p.totalBV>0)subInfo.push('🔴'+p.totalBV+'BV');
+    if(opts2.ladies&&p.totalLA>0)subInfo.push('🚺'+p.totalLA+'🍺');
     return'<div class="prow'+(i===0&&p.pl>0?' leader':'')+'" style="border-left-color:'+tco+'" data-pid="'+esc(p.id)+'">'
       +'<div class="pr-rank serif">'+(medal||i+1)+'</div>'
-      +'<div><div class="pr-name serif">'+esc(p.name)+'</div><div class="pr-sub">'+(p.pl>0?p.pl+'/18 Löcher':'Noch nicht gestartet')+'</div></div>'
+      +'<div><div class="pr-name serif">'+esc(p.name)+'</div><div class="pr-sub">'+(subInfo.length?subInfo.join('  '):'Noch nicht gestartet')+'</div></div>'
       +'<div class="pr-ctr">'+hd(p.handicap)+'</div>'
       +'<div class="pr-ctr">'+(p.pl>0?'L'+p.pl:'–')+'</div>'
       +'<div class="pr-score serif" style="color:'+dco+'">'+dv+'</div>'
@@ -1085,6 +1134,11 @@ function renderTeamView(){
 function openCard(id){
   var p=G.players.find(function(p){return p.id===id;});if(!p)return;
   CID=id;CS=p.scores?p.scores.slice():Array(18).fill(null);
+  // Extras laden
+  CEXT=Array(18).fill(null).map(function(_,i){
+    var ex=(p.extras&&p.extras[i])||{};
+    return{bv:!!ex.bv,la:!!ex.la,putts:Number(ex.putts)||0};
+  });
   var loc=loadLoc(id);
   if(loc&&Array.isArray(loc)&&loc.length===18&&
      loc.filter(function(s){return s!=null;}).length>CS.filter(function(s){return s!=null;}).length){
@@ -1116,7 +1170,7 @@ function updatePills(){
   var par=G.round.par||DPAR,hcp=Number(p.handicap)||0,mode=G.round.mode||'stroke';
   var pl=pc(CS);
   var eff=CS.map(function(s,i){return effScore(s,i,hcp);});
-  var parP=par.slice(0,pl).reduce(function(a,b){return a+b;},0),bvp=pl>0?bt(eff)-parP:null;
+  var parP=eff.reduce(function(a,s,i){return s!=null?a+(par[i]||4):a;},0),bvp=pl>0?bt(eff)-parP:null;
   var bEl=document.getElementById('pill-brutto');
   bEl.textContent=bvp!=null?fmt(bvp):'–';bEl.style.color=bvp!=null?dc(bvp):'#2d4529';
   var nEl=document.getElementById('pill-netto');
@@ -1160,6 +1214,68 @@ function renderHoles(){
   document.querySelectorAll('.stbtn').forEach(function(btn){
     btn.addEventListener('click',function(){step(parseInt(this.dataset.idx),parseInt(this.dataset.d));});
   });
+
+  // Extra-Buttons (Ballverlust, Ladies, Putts) pro Loch
+  var opts=G.round.options||{};
+  holes.forEach(function(i){
+    var hasExtra=opts.ballverlust||opts.ladies||opts.putts;
+    if(!hasExtra)return;
+    var ex=CEXT[i];
+    var row=document.getElementById('hr-'+i);
+    if(!row)return;
+
+    // Extra-Zeile nach der Loch-Row einfügen (falls noch nicht da)
+    var existingEx=document.getElementById('ex-'+i);
+    if(existingEx)existingEx.remove();
+    var exDiv=document.createElement('div');
+    exDiv.id='ex-'+i;
+
+    var html='';
+    if(opts.ballverlust||opts.ladies){
+      html+='<div class="extra-row">';
+      if(opts.ballverlust){
+        html+='<button class="extra-btn'+(ex.bv?' active-bv':'')+'" data-ex="bv" data-idx="'+i+'">'
+          +'🔴 Ballverlust'+(ex.bv?' ✓':'')+'</button>';
+      }
+      if(opts.ladies){
+        html+='<button class="extra-btn'+(ex.la?' active-la':'')+'" data-ex="la" data-idx="'+i+'">'
+          +'🚺 Damenabschlag'+(ex.la?' 🍺':'')+'</button>';
+      }
+      html+='</div>';
+    }
+    if(opts.putts){
+      html+='<div class="putt-row">'
+        +'<div class="putt-lbl">🏌️ Putts</div>'
+        +'<div class="putt-stepper">'
+        +'<button class="putt-btn" data-pu="-1" data-idx="'+i+'">−</button>'
+        +'<div class="putt-val" id="pv-'+i+'">'+(ex.putts||0)+'</div>'
+        +'<button class="putt-btn" data-pu="1" data-idx="'+i+'">+</button>'
+        +'</div></div>';
+    }
+    exDiv.innerHTML=html;
+    row.after(exDiv);
+  });
+
+  // Extra-Button Events
+  document.querySelectorAll('[data-ex]').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var idx=parseInt(this.dataset.idx),key=this.dataset.ex;
+      CEXT[idx][key]=!CEXT[idx][key];
+      // Ladies: xStr neu berechnen → Hole neu rendern
+      renderHoles();
+      trigAS();
+    });
+  });
+  document.querySelectorAll('[data-pu]').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var idx=parseInt(this.dataset.idx),d=parseInt(this.dataset.pu);
+      CEXT[idx].putts=Math.max(0,Math.min(9,(CEXT[idx].putts||0)+d));
+      var pvEl=document.getElementById('pv-'+idx);
+      if(pvEl)pvEl.textContent=CEXT[idx].putts;
+      trigAS();
+    });
+  });
+
   refreshHalf(holes);
 }
 function step(idx,delta){
@@ -1211,7 +1327,7 @@ async function saveScore(){
   saveLoc(CID,CS);
   if(!navigator.onLine){toast('📵 Offline – lokal gespeichert');syncDot('off');pSync=true;btn.disabled=false;btn.textContent='Score speichern ✓';return;}
   try{
-    G.players=G.players.map(function(p){return p.id===CID?Object.assign({},p,{scores:CS.slice()}):p;});
+    G.players=G.players.map(function(p){return p.id===CID?Object.assign({},p,{scores:CS.slice(),extras:CEXT.slice()}):p;});
     await fbSet(fp('players/'+CID),G.players.find(function(p){return p.id===CID;}));
     clearLoc(CID);pSync=false;syncDot('on');
     btn.textContent='✅ Gespeichert!';btn.style.background='linear-gradient(135deg,#1b5e20,#2e7d32)';
@@ -1234,15 +1350,33 @@ function renderResult(){
   var sorted=G.players.map(enrich).sort(function(a,b){
     if(a.bvp==null&&b.bvp==null)return 0;if(a.bvp==null)return 1;if(b.bvp==null)return -1;return a.bvp-b.bvp;
   });
+  var ropts=G.round.options||{};
+  // Kopfzeile ggf. erweitern
+  var rHead=document.getElementById('res-head-row');
+  if(rHead){
+    var extraCols='';
+    if(ropts.putts)extraCols+='<span style="text-align:center">PUTTS</span>';
+    if(ropts.ballverlust)extraCols+='<span style="text-align:center">🔴BV</span>';
+    if(ropts.ladies)extraCols+='<span style="text-align:center">🍺</span>';
+    var cols='28px 1fr 48px 48px 48px 44px'+(ropts.putts?' 36px':'')+(ropts.ballverlust?' 36px':'')+(ropts.ladies?' 36px':'');
+    rHead.style.gridTemplateColumns=cols;
+    rHead.innerHTML='<span>#</span><span>SPIELER</span><span style="text-align:center">BRUTTO</span><span style="text-align:center">NETTO</span><span style="text-align:center">STBL.</span><span style="text-align:center">LOCH</span>'+extraCols;
+  }
   document.getElementById('res-rows').innerHTML=sorted.map(function(p,i){
     var medal=i===0&&p.pl>0?'🥇':i===1&&p.pl>0?'🥈':i===2&&p.pl>0?'🥉':(i+1)+'.';
-    return'<div class="res-row">'
+    var cols2='28px 1fr 48px 48px 48px 44px'+(ropts.putts?' 36px':'')+(ropts.ballverlust?' 36px':'')+(ropts.ladies?' 36px':'');
+    var extraVals='';
+    if(ropts.putts)extraVals+='<div style="text-align:center;font-size:13px;font-weight:700;color:var(--txt2)">'+(p.totalPutts||0)+'</div>';
+    if(ropts.ballverlust)extraVals+='<div style="text-align:center;font-size:13px;font-weight:700;color:var(--red)">'+(p.totalBV||0)+'</div>';
+    if(ropts.ladies)extraVals+='<div style="text-align:center;font-size:13px;font-weight:700;color:#e65100">'+(p.totalLA||0)+'🍺</div>';
+    return'<div class="res-row" style="grid-template-columns:'+cols2+'">'
       +'<div style="text-align:center;font-size:13px;color:var(--txt3)">'+medal+'</div>'
       +'<div><div class="serif" style="font-size:15px;font-weight:700">'+esc(p.name)+'</div><div style="font-size:10px;color:var(--txt3)">HCP '+hd(p.handicap)+'</div></div>'
       +'<div style="text-align:center;font-size:14px;font-weight:700;color:'+(p.bvp!=null?dc(p.bvp):'var(--txt3)')+'">'+(p.bvp!=null?fmt(p.bvp):'–')+'</div>'
       +'<div style="text-align:center;font-size:14px;font-weight:700;color:'+(p.nvp!=null?dc(p.nvp):'var(--txt3)')+'">'+(p.nvp!=null?fmt(p.nvp):'–')+'</div>'
       +'<div style="text-align:center;font-size:14px;font-weight:700;color:#6a1b9a">'+(p.stp!=null?p.stp:'–')+'</div>'
       +'<div style="text-align:center;font-size:12px;color:var(--txt3)">'+p.pl+'/18</div>'
+      +extraVals
       +'</div>';
   }).join('');
 }
@@ -1252,9 +1386,14 @@ function buildShareText(){
     if(a.bvp==null&&b.bvp==null)return 0;if(a.bvp==null)return 1;if(b.bvp==null)return -1;return a.bvp-b.bvp;
   });
   var t='⛳ '+(r.courseName||'Golf')+(CODE?' ['+CODE+']':'')+'\n📅 '+(r.date||'')+' · Par '+par.reduce(function(a,b){return a+b;},0)+' · '+modeName(r)+'\n\n';
+  var sopts=G.round.options||{};
   sorted.forEach(function(p,i){
     var m=i===0&&p.pl>0?'🥇':i===1&&p.pl>0?'🥈':i===2&&p.pl>0?'🥉':(i+1)+'.';
-    t+=m+' '+p.name+'  B:'+(p.bvp!=null?fmt(p.bvp):'–')+'  N:'+(p.nvp!=null?fmt(p.nvp):'–')+'  S:'+(p.stp!=null?p.stp:'–')+'  ('+p.pl+'/18)\n';
+    var extra='';
+    if(sopts.putts&&p.totalPutts>0)extra+='  🏌️'+p.totalPutts+'P';
+    if(sopts.ballverlust&&p.totalBV>0)extra+='  🔴'+p.totalBV+'BV';
+    if(sopts.ladies&&p.totalLA>0)extra+='  🚺'+p.totalLA+'🍺';
+    t+=m+' '+p.name+'  B:'+(p.bvp!=null?fmt(p.bvp):'–')+'  N:'+(p.nvp!=null?fmt(p.nvp):'–')+'  S:'+(p.stp!=null?p.stp:'–')+'  ('+p.pl+'/18)'+extra+'\n';
   });
   return t+'\n📊 Golf TurnierEntwickler';
 }
@@ -1309,6 +1448,11 @@ function initSetup(){
   document.getElementById('api-save-btn').style.display='none';
   var tSel=document.getElementById('trn-rounds');
   if(tSel)tSel.value=G.tournament?G.tournament.totalRounds:0;
+  var opts=G.round.options||{};
+  var cb=function(id,val){var el=document.getElementById(id);if(el)el.checked=!!val;};
+  cb('opt-ballverlust',opts.ballverlust);
+  cb('opt-ladies',opts.ladies);
+  cb('opt-putts',opts.putts);
   selectTM(STM);renderHoleRows();renderPList();renderSavedCourses().catch(function(){});switchCourseTab('manual');
 }
 function switchCourseTab(t){
@@ -1406,9 +1550,11 @@ async function saveSetup(){
     var msv=document.getElementById('max-score-val');
     maxScore=parseInt(msv&&msv.value)||8;
   }
+  var gv=function(id){var el=document.getElementById(id);return el?el.checked:false;};
   G.round={courseName:cname,par:SPAR,strokeIndex:SSI,tee:tee,
     date:document.getElementById('r-date').value||tod(),
-    mode:rMode,maxScore:maxScore,teamMode:STM};
+    mode:rMode,maxScore:maxScore,teamMode:STM,
+    options:{ballverlust:gv('opt-ballverlust'),ladies:gv('opt-ladies'),putts:gv('opt-putts')}};
   G.players=SP;
   var trnR=parseInt(document.getElementById('trn-rounds').value)||0;
   if(trnR>1){if(!G.tournament||G.tournament.totalRounds!==trnR)G.tournament={totalRounds:trnR,currentRound:1,name:cname,rounds:[]};}
@@ -1606,7 +1752,7 @@ async function closeRound(){
     roundNum:cur,date:G.round.date||tod(),courseName:G.round.courseName||'–',
     par:(G.round.par||DPAR).slice(),si:(G.round.strokeIndex||DSI).slice(),
     mode:G.round.mode||'stroke',maxScore:G.round.maxScore||null,
-    teamMode:G.round.teamMode||'none',scores:scores
+    teamMode:G.round.teamMode||'none',options:G.round.options||{},scores:scores
   };
   var rounds=(t.rounds||[]).slice();
   var idx=rounds.findIndex(function(x){return x.roundNum===cur;});
@@ -1642,7 +1788,7 @@ function calcTotal(){
         if(rndMode==='zaehlen_fix')return Math.min(raw,rndMax||8);
         return raw;
       });
-      var br=bt(eff),parP=par.slice(0,pl).reduce(function(a,b){return a+b;},0),bvp=br-parP;
+      var br=bt(eff),parP=eff.reduce(function(a,s,i){return s!=null?a+(par[i]||4):a;},0),bvp=br-parP;
       var nvp=0,stp=0;
       eff.forEach(function(s,i){
         if(s==null)return;
