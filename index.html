@@ -770,7 +770,8 @@ input,select,button{font-family:'DM Sans',sans-serif}
 
 <!-- SPIELANALYSE -->
 <div id="view-analyse" class="view">
-  <div class="hdr">
+  <div id="analyse-top-spacer" style="height:0;transition:height .3s;flex-shrink:0"></div>
+  <div class="hdr" id="analyse-hdr">
     <button class="back-btn" id="analyse-back">←</button>
     <div style="flex:1;min-width:0">
       <div class="hdr-title serif" id="analyse-pname">Spielanalyse</div>
@@ -884,18 +885,22 @@ function hideBanner(){
 
 // Berechnet wie viel Platz Banner + Log oben brauchen
 function updateCardSpacer(){
-  var spacer=document.getElementById('card-top-spacer');
-  var hdr=document.getElementById('card-hdr');
-  if(!spacer)return;
   var total=0;
   var banner=document.getElementById('news-banner');
   if(banner&&banner.classList.contains('show'))total+=banner.offsetHeight||58;
   var log=document.getElementById('score-log-bar');
   if(log&&log.classList.contains('visible'))total+=log.offsetHeight||36;
   var h=total>0?(total+2)+'px':'0px';
-  spacer.style.height=h;
-  // Sticky Header muss auch unter Banner/Log kleben
+  // Scorecard
+  var spacer=document.getElementById('card-top-spacer');
+  var hdr=document.getElementById('card-hdr');
+  if(spacer)spacer.style.height=h;
   if(hdr)hdr.style.top=h;
+  // Analyse
+  var aspacer=document.getElementById('analyse-top-spacer');
+  var ahdr=document.getElementById('analyse-hdr');
+  if(aspacer)aspacer.style.height=h;
+  if(ahdr)ahdr.style.top=h;
 }
 
 // ════════════════════════════════════════════════════
@@ -2296,6 +2301,7 @@ function openAnalyse(pid){
 
   document.getElementById('analyse-content').innerHTML=html;
   showView('analyse');
+  setTimeout(updateCardSpacer,50);
 }
 
 function shareAnalyse(pid){
