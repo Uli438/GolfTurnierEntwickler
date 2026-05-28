@@ -1257,6 +1257,13 @@ function openCard(id){
   CEXT=Array(18).fill(null).map(function(_,i){var ex=(p.extras&&p.extras[i])||{};return{bv:Number(ex.bv)||0,la:!!ex.la,putts:Number(ex.putts)||0,absch:ex.absch||null,abschLaenge:ex.abschLaenge||null,annDist:ex.annDist||null,annTref:!!ex.annTref};});
   var loc=loadLoc(id);if(loc&&Array.isArray(loc)&&loc.length===18&&loc.filter(function(s){return s!=null;}).length>CS.filter(function(s){return s!=null;}).length){CS=loc.slice();setTimeout(pushFB,300);}
   CTAB=localStorage.getItem(LS_TAB+id)||(pc(CS)>=9?'back':'front');
+  // Presence mit echtem Namen aktualisieren
+  if(PRES_REF&&CODE){
+    PRES_REF.update({name:p.name,playerId:id});
+    DB.ref('activity').limitToLast(1).once('value').then(function(snap){
+      if(snap.exists()){var key=Object.keys(snap.val())[0];DB.ref('activity/'+key).update({name:p.name});}
+    });
+  }
   showView('card');renderCard();setTimeout(updateCardSpacer,100);
 }
 function setTab(t){CTAB=t;if(CID)localStorage.setItem(LS_TAB+CID,t);document.getElementById('tab-front').classList.toggle('active',t==='front');document.getElementById('tab-back').classList.toggle('active',t==='back');renderHoles();}
