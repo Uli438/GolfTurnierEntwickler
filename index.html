@@ -411,6 +411,7 @@ input,select,button{font-family:'DM Sans',sans-serif}
   <div class="hdr"><button class="back-btn" id="result-back">←</button><div class="hdr-title serif">Ergebnis & Teilen</div></div>
   <div class="result-body">
     <div class="result-card"><div class="serif" style="font-size:20px;font-weight:700;margin-bottom:2px" id="res-course"></div><div style="font-size:11px;color:var(--txt2);margin-bottom:14px" id="res-meta"></div><div class="res-scroll"><table class="res-table"><thead><tr id="res-head-row"></tr></thead><tbody id="res-rows"></tbody></table></div></div>
+    <div id="longest-drive-card"></div>
     <div class="share-btns"><button class="share-btn p" id="btn-share-result">📤 Teilen</button><button class="share-btn s" id="btn-copy-result">📋 Kopieren</button></div>
   </div>
 </div>
@@ -512,6 +513,11 @@ input,select,button{font-family:'DM Sans',sans-serif}
       <div class="slabel">🏆 TURNIER (OPTIONAL)</div>
       <div class="shint">Für Einzelrunde leer lassen.</div>
       <select class="inp" id="trn-rounds"><option value="0">Keine Turnierwertung</option><option value="2">2 Runden</option><option value="3">3 Runden</option><option value="4">4 Runden</option><option value="5">5 Runden</option><option value="6">6 Runden</option><option value="7">7 Runden</option></select>
+    </section>
+    <section>
+      <div class="slabel">📏 LONGEST DRIVE (OPTIONAL)</div>
+      <div class="shint">Bahn festlegen, an der der längste Drive gewertet wird. Spieler messen ihren Drive per GPS (📍 muss aktiv sein). Sieger erscheint in der Ergebnis-Tabelle.</div>
+      <select class="inp" id="longest-drive-hole"><option value="0">Kein Longest Drive</option></select>
     </section>
     <button class="rstbtn" id="btn-reset">Alle Scores zurücksetzen</button>
     <button class="primbtn serif" id="btn-save-setup">Speichern & Starten ✓</button>
@@ -1314,12 +1320,31 @@ function renderResult(){
     return'<tr class="res-player-row" data-pid="'+esc(p.id)+'" style="cursor:pointer">'+row+'</tr><tr><td colspan="'+colSpan+'" style="padding:0"><div class="sc-detail" id="scd-'+esc(p.id)+'">'+scDetail+'</div></td></tr>';
   }).join('');
   document.querySelectorAll('.res-player-row').forEach(function(row){row.addEventListener('click',function(){var pid=this.dataset.pid;var detail=document.getElementById('scd-'+pid);if(!detail)return;var isOpen=detail.classList.contains('open');document.querySelectorAll('.sc-detail.open').forEach(function(d){d.classList.remove('open');});if(!isOpen)detail.classList.add('open');});});
+  renderLongestDrive();
+}
+function longestDriveStandings(){
+  var hole=G.round.longestDrive||0;if(!hole)return null;var idx=hole-1;
+  var rows=G.players.map(function(p){
+    var shots=(p.extras&&p.extras[idx]&&p.extras[idx].shots)||[];
+    var best=null;shots.forEach(function(s){if(s&&s.dist!=null&&(best===null||s.dist>best.dist))best={dist:s.dist,club:s.club};});
+    return{name:p.name,dist:best?best.dist:null,club:best?best.club:null};
+  }).filter(function(r){return r.dist!=null;});
+  rows.sort(function(a,b){return b.dist-a.dist;});
+  return{hole:hole,rows:rows};
+}
+function renderLongestDrive(){
+  var box=document.getElementById('longest-drive-card');if(!box)return;
+  var ld=longestDriveStandings();
+  if(!ld){box.innerHTML='';return;}
+  if(!ld.rows.length){box.innerHTML='<div class="result-card"><div class="serif" style="font-size:17px;font-weight:700;margin-bottom:4px">📏 Longest Drive · Bahn '+ld.hole+'</div><div style="font-size:12px;color:var(--txt3)">Noch keine Drives gemessen. Spieler müssen GPS (📍) aktiv haben und ihren Drive an Bahn '+ld.hole+' messen.</div></div>';return;}
+  box.innerHTML='<div class="result-card"><div class="serif" style="font-size:17px;font-weight:700;margin-bottom:10px">📏 Longest Drive · Bahn '+ld.hole+'</div>'+ld.rows.map(function(r,i){var medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'.';return'<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-light)"><div style="min-width:28px;text-align:center;font-size:14px">'+medal+'</div><div style="flex:1;font-size:14px;font-weight:700'+(i===0?';color:var(--accent)':'')+'">'+esc(r.name)+'</div>'+(r.club?'<div style="font-size:10px;color:var(--txt3)">'+esc(r.club)+'</div>':'')+'<div style="font-size:18px;font-weight:900;font-family:\'Cormorant Garamond\',serif;color:'+(i===0?'var(--accent)':'var(--txt)')+'">'+r.dist+'m</div></div>';}).join('')+'</div>';
 }
 function buildShareText(){
   var r=G.round,par=r.par||DPAR,sopts=r.options||{};
   var sorted=G.players.map(enrich).sort(function(a,b){if(a.bvp==null&&b.bvp==null)return 0;if(a.bvp==null)return 1;if(b.bvp==null)return -1;return a.bvp-b.bvp;});
   var t='⛳ '+(r.courseName||'Golf')+(CODE?' ['+CODE+']':'')+'\n📅 '+(r.date||'')+' · Par '+par.reduce(function(a,b){return a+b;},0)+' · '+modeName(r)+'\n\n';
   sorted.forEach(function(p,i){var m=i===0&&p.pl>0?'🥇':i===1&&p.pl>0?'🥈':i===2&&p.pl>0?'🥉':(i+1)+'.';var extra='';if(sopts.putts&&p.totalPutts>0)extra+='  🏌️'+p.totalPutts+'P';if(sopts.ballverlust&&p.totalBV>0)extra+='  🔴'+p.totalBV+'BV';if(sopts.ladies&&p.totalLA>0)extra+='  🚺'+p.totalLA+'🍺';t+=m+' '+p.name+'  B:'+(p.bvp!=null?fmt(p.bvp):'–')+'  N:'+(p.nvp!=null?fmt(p.nvp):'–')+'  S:'+(p.stp!=null?p.stp:'–')+'  ('+p.pl+'/18)'+extra+'\n';});
+  var ld=longestDriveStandings();if(ld&&ld.rows.length){t+='\n📏 LONGEST DRIVE · Bahn '+ld.hole+':\n';ld.rows.forEach(function(r,i){var m=i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'.';t+=m+' '+r.name+'  '+r.dist+'m'+(r.club?' ('+r.club+')':'')+'\n';});}
   return t+'\n📊 Golf Turniermodus · uli438.github.io/Golfturniermodus';
 }
 async function shareResult(){var t=buildShareText();if(navigator.share){try{await navigator.share({title:'Golf Ergebnis',text:t});}catch(e){}}else copyText(t);}
@@ -1338,6 +1363,7 @@ function initSetup(){
   var msv=document.getElementById('max-score-val');if(msv)msv.value=G.round.maxScore||'';document.getElementById('max-score-wrap').style.display=G.round.mode==='zaehlen_fix'?'block':'none';
   document.getElementById('api-results').style.display='none';document.getElementById('tee-wrap').style.display='none';document.getElementById('api-sel').style.display='none';document.getElementById('api-search').value='';document.getElementById('api-save-btn').style.display='none';
   var tSel=document.getElementById('trn-rounds');if(tSel)tSel.value=G.tournament?G.tournament.totalRounds:0;
+  var ldSel=document.getElementById('longest-drive-hole');if(ldSel){var par=SPAR||DPAR;ldSel.innerHTML='<option value="0">Kein Longest Drive</option>'+Array.from({length:18},function(_,i){return i;}).map(function(i){return'<option value="'+(i+1)+'">Bahn '+(i+1)+' (Par '+(par[i]||4)+')</option>';}).join('');ldSel.value=G.round.longestDrive||0;}
   var opts=G.round.options||{};var cb=function(id,val){var el=document.getElementById(id);if(el)el.checked=!!val;};
   cb('opt-ballverlust',opts.ballverlust);cb('opt-ladies',opts.ladies);cb('opt-putts',opts.putts);cb('opt-notif',opts.notif);cb('opt-zaehler',opts.zaehler);
   var ns=opts.notifSettings||{};var nDef=function(id,def){var el=document.getElementById(id);if(el)el.checked=(id.replace('notif-','') in ns)?ns[id.replace('notif-','')]:def;};
@@ -1420,7 +1446,7 @@ async function saveSetup(){
   if(rMode==='zaehlen_fix'){var msv=document.getElementById('max-score-val');maxScore=parseInt(msv&&msv.value)||8;}
   var gv=function(id){var el=document.getElementById(id);return el?el.checked:false;};
   var notifSettings={hio:gv('notif-hio'),eagle:gv('notif-eagle'),birdie:gv('notif-birdie'),par:gv('notif-par'),bogey:gv('notif-bogey'),double:gv('notif-double'),bv:gv('notif-bv'),lady:gv('notif-lady'),putt3:gv('notif-putt3'),scorelog:gv('notif-scorelog')};
-  G.round={courseName:cname,par:SPAR,strokeIndex:SSI,tee:tee,date:document.getElementById('r-date').value||tod(),mode:rMode,maxScore:maxScore,teamMode:STM,options:{ballverlust:gv('opt-ballverlust'),ladies:gv('opt-ladies'),putts:gv('opt-putts'),notif:gv('opt-notif'),notifSettings:notifSettings,zaehler:gv('opt-zaehler')}};
+  G.round={courseName:cname,par:SPAR,strokeIndex:SSI,tee:tee,date:document.getElementById('r-date').value||tod(),mode:rMode,maxScore:maxScore,teamMode:STM,longestDrive:(parseInt(document.getElementById('longest-drive-hole').value)||0),options:{ballverlust:gv('opt-ballverlust'),ladies:gv('opt-ladies'),putts:gv('opt-putts'),notif:gv('opt-notif'),notifSettings:notifSettings,zaehler:gv('opt-zaehler')}};
   G.players=SP;var trnR=parseInt(document.getElementById('trn-rounds').value)||0;
   if(trnR>1){if(!G.tournament||G.tournament.totalRounds!==trnR)G.tournament={totalRounds:trnR,currentRound:1,name:cname,rounds:[]};}else G.tournament=null;
   if(!CODE)CODE=genCode();NOTIF_ON=gv('opt-notif');saveRec(CODE,cname);document.getElementById('code-badge').textContent='🔑 '+CODE;
