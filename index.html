@@ -411,7 +411,7 @@ input,select,button{font-family:'DM Sans',sans-serif}
 <div id="view-lb" class="view">
   <div id="lb-hero">
     <div class="eyebrow"><div class="sync-dot" id="sync-dot"></div>LIVE SCORING · TURNIERMODUS</div>
-    <div class="lb-title serif" id="lb-course-name">Golf Turniermodus</div>
+    <div class="lb-title serif" id="lb-course-name">Birdino</div>
     <div class="lb-sub" id="lb-course-meta"></div>
     <div class="code-badge" id="code-badge">🔑 ···</div>
     <div class="lb-tabs">
@@ -578,7 +578,7 @@ input,select,button{font-family:'DM Sans',sans-serif}
 <div id="view-dev" class="view">
   <div class="hdr"><button class="back-btn" id="dev-back">←</button><div class="hdr-title serif">🛠 Entwickler</div></div>
   <div style="padding:18px 16px;display:flex;flex-direction:column;gap:14px">
-    <div style="background:#1a1a2e;border-radius:14px;padding:16px"><div style="font-size:9px;color:#ffd700;letter-spacing:2px;font-weight:700;margin-bottom:4px">ENTWICKLER-BEREICH</div><div style="font-size:11px;color:rgba(255,255,255,.6);line-height:1.5">Golf Turniermodus · Entwickler-Einstellungen</div></div>
+    <div style="background:#1a1a2e;border-radius:14px;padding:16px"><div style="font-size:9px;color:#ffd700;letter-spacing:2px;font-weight:700;margin-bottom:4px">ENTWICKLER-BEREICH</div><div style="font-size:11px;color:rgba(255,255,255,.6);line-height:1.5">Birdino · Entwickler-Einstellungen</div></div>
 
     <div class="dev-sec">SICHERHEIT &amp; ZUGANG</div>
     <div class="lcard">
@@ -716,6 +716,7 @@ var CLEANUP_PROTECT='';
 var IS_ADMIN_VIEW=false;
 var CMARK=Array(18).fill(null),MARK_ID=null,Z_SLOT='self';
 var GPS_MEASURE=null;
+var LD_ARM=null;
 var CLUBS=['Driver','Holz 3','Holz 5','Hybrid','Eisen 4','Eisen 5','Eisen 6','Eisen 7','Eisen 8','Eisen 9','Pitching Wedge','Gap Wedge','Sand Wedge','Lob Wedge'];
 var FB_CFG={apiKey:'AIzaSyDWzTqMaEa2U9MF_k84MBvbHj1wK30LuuA',authDomain:'ulis-golfscore.firebaseapp.com',databaseURL:'https://ulis-golfscore-default-rtdb.europe-west1.firebasedatabase.app',projectId:'ulis-golfscore',storageBucket:'ulis-golfscore.firebasestorage.app',messagingSenderId:'752079349846',appId:'1:752079349846:web:5fe4656acf7722f743b3f7'};
 var SBU='https://pukixlbdbdbbsmqobfhj.supabase.co';
@@ -874,7 +875,7 @@ document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('tmt-bb').addEventListener('click',function(){setTM('bestball');});
   document.getElementById('tmt-agg').addEventListener('click',function(){setTM('aggregat');});
   document.getElementById('admin-back').addEventListener('click',function(){showView('lobby');});
-  document.getElementById('card-back').addEventListener('click',function(){var hdr=document.getElementById('card-hdr');if(hdr)hdr.style.top='0px';gpsStopWarmup();showView('lb');});
+  document.getElementById('card-back').addEventListener('click',function(){var hdr=document.getElementById('card-hdr');if(hdr)hdr.style.top='0px';gpsStopWarmup();ldArmStop();LD_ARM=null;showView('lb');});
   document.getElementById('result-back').addEventListener('click',function(){showView('lb');});
   document.getElementById('total-back').addEventListener('click',function(){showView('lb');});
   document.getElementById('setup-back').addEventListener('click',function(){showView(CODE?'lb':'lobby');});
@@ -1027,7 +1028,7 @@ async function enterTournament(code,fromAdmin){
     try{var swSnap=await DB.ref('config/scorecard_warning').get();if(swSnap&&swSnap.exists()&&swSnap.val())SCORECARD_WARN=String(swSnap.val());var swEx=await DB.ref('config/scorecard_warning_except').get();if(swEx&&swEx.exists()&&swEx.val())SCORECARD_WARN_EXCEPT=String(swEx.val());}catch(e){}
   }catch(e){toast('⚠️ Verbindungsfehler');CODE=null;}
 }
-function goLobby(){stopListeners();stopPresence();gpsStopWarmup();CODE=null;IS_ADMIN_VIEW=false;PREV_SNAP={};NOTIF_ON=false;hideBanner();resetScoreLog();LIVE_ROUND=null;LIVE_PLAYERS=null;VIEW_RND=null;G={players:[],tournament:null,round:{courseName:'',par:DPAR.slice(),strokeIndex:DSI.slice(),date:tod(),mode:'stroke',maxScore:null,tee:'',teamMode:'none',options:{}}};showView('lobby');}
+function goLobby(){stopListeners();stopPresence();gpsStopWarmup();ldArmStop();LD_ARM=null;CODE=null;IS_ADMIN_VIEW=false;PREV_SNAP={};NOTIF_ON=false;hideBanner();resetScoreLog();LIVE_ROUND=null;LIVE_PLAYERS=null;VIEW_RND=null;G={players:[],tournament:null,round:{courseName:'',par:DPAR.slice(),strokeIndex:DSI.slice(),date:tod(),mode:'stroke',maxScore:null,tee:'',teamMode:'none',options:{}}};showView('lobby');}
 function showQR(){if(!CODE)return;document.getElementById('qr-code-txt').textContent=CODE;document.getElementById('qr-modal').classList.add('show');}
 
 // ════ PRESENCE & ACTIVITY ════
@@ -1369,10 +1370,22 @@ function renderHoles(){
     }
     if(gpsActive){
       var gstage=(GPS_MEASURE&&GPS_MEASURE.idx===i)?GPS_MEASURE.stage:null;
-      var gLabel=gstage==='start'?'📍 Ende messen (am Ball)':'📍 Start messen (am Abschlag)';
       var shots=ex.shots||[];
       var clubOpts=CLUBS.map(function(c){return'<option value="'+esc(c)+'">'+esc(c)+'</option>';}).join('');
-      html+='<div class="gps-row"><select class="gps-club" id="gps-club-'+i+'"'+(gstage?' disabled':'')+'>'+clubOpts+'</select><button class="gps-btn'+(gstage?' measuring':'')+'" id="gps-btn-'+i+'" data-gps-idx="'+i+'">'+gLabel+'</button>'+(shots.length?'<div class="gps-shots">'+shots.map(function(s,si){return'<span class="gps-shot">'+esc(s.club)+' '+s.dist+'m'+(s.acc!=null?' (±'+s.acc+'m)':'')+' <button data-delshot-idx="'+i+'" data-delshot-si="'+si+'">×</button></span>';}).join('')+'</div>':'')+'</div>';
+      var shotsHtml=shots.length?'<div class="gps-shots">'+shots.map(function(s,si){return'<span class="gps-shot">'+esc(s.club)+' '+s.dist+'m'+(s.acc!=null?' (±'+s.acc+'m)':'')+' <button data-delshot-idx="'+i+'" data-delshot-si="'+si+'">×</button></span>';}).join('')+'</div>':'';
+      var arming=LD_ARM&&LD_ARM.idx===i;
+      if(isLD&&gstage!=='start'){
+        // Longest Drive: Ampel-Ablauf
+        if(arming){
+          html+='<div class="gps-row" style="flex-direction:column;align-items:stretch"><select class="gps-club" id="gps-club-'+i+'" disabled>'+clubOpts+'</select><div id="ld-arm-'+i+'" style="margin-top:8px"></div>'+shotsHtml+'</div>';
+        }else{
+          html+='<div class="gps-row" style="flex-direction:column;align-items:stretch"><select class="gps-club" id="gps-club-'+i+'">'+clubOpts+'</select><button class="gps-btn" id="gps-btn-'+i+'" data-ld-arm="'+i+'" style="margin-top:8px">🎯 Startpunkt anpeilen (Ampel)</button>'+shotsHtml+'</div>';
+        }
+      }else{
+        // Normale Schlagweite ODER LD-Endmessung: 2-Tap-Ablauf
+        var gLabel=gstage==='start'?'📍 Ende messen (am Ball)':'📍 Start messen (am Abschlag)';
+        html+='<div class="gps-row"><select class="gps-club" id="gps-club-'+i+'"'+(gstage?' disabled':'')+'>'+clubOpts+'</select><button class="gps-btn'+(gstage?' measuring':'')+'" id="gps-btn-'+i+'" data-gps-idx="'+i+'">'+gLabel+'</button>'+shotsHtml+'</div>';
+      }
     }
     exDiv.innerHTML=html;row.after(exDiv);
   });
@@ -1387,6 +1400,8 @@ function renderHoles(){
   document.querySelectorAll('[data-ann-idx]').forEach(function(inp){inp.addEventListener('change',function(){CEXT[parseInt(this.dataset.annIdx)].annDist=this.value?Number(this.value):null;trigAS();});});
   document.querySelectorAll('[data-pu]').forEach(function(btn){btn.addEventListener('click',function(){var idx=parseInt(this.dataset.idx),d=parseInt(this.dataset.pu);CEXT[idx].putts=Math.max(0,Math.min(9,(CEXT[idx].putts||0)+d));var pvEl=document.getElementById('pv-'+idx);if(pvEl)pvEl.textContent=CEXT[idx].putts;trigAS();});});
   document.querySelectorAll('[data-gps-idx]').forEach(function(btn){btn.addEventListener('click',function(){gpsMeasure(parseInt(this.dataset.gpsIdx));});});
+  document.querySelectorAll('[data-ld-arm]').forEach(function(btn){btn.addEventListener('click',function(){ldArm(parseInt(this.dataset.ldArm));});});
+  if(LD_ARM&&LD_ARM.idx!=null){var a=document.getElementById('ld-arm-'+LD_ARM.idx);if(a)ldArmUpdate(LD_ARM.idx,LD_ARM.cur?LD_ARM.cur.acc:null);}
   document.querySelectorAll('[data-ldg]').forEach(function(btn){btn.addEventListener('click',function(){var idx=parseInt(this.dataset.idx);CEXT[idx].ldGender=this.dataset.ldg;renderHoles();trigAS();});});
   document.querySelectorAll('[data-ldfw]').forEach(function(btn){btn.addEventListener('click',function(){var idx=parseInt(this.dataset.idx);CEXT[idx].ldFairway=!CEXT[idx].ldFairway;renderHoles();trigAS();});});
   document.querySelectorAll('[data-delshot-idx]').forEach(function(btn){btn.addEventListener('click',function(){delShot(parseInt(this.dataset.delshotIdx),parseInt(this.dataset.delshotSi));});});
@@ -1566,7 +1581,7 @@ function buildShareText(){
   var t='⛳ '+(r.courseName||'Golf')+(CODE?' ['+CODE+']':'')+'\n📅 '+(r.date||'')+' · Par '+par.reduce(function(a,b){return a+b;},0)+' · '+modeName(r)+'\n\n';
   sorted.forEach(function(p,i){var m=i===0&&p.pl>0?'🥇':i===1&&p.pl>0?'🥈':i===2&&p.pl>0?'🥉':(i+1)+'.';var extra='';if(sopts.putts&&p.totalPutts>0)extra+='  🏌️'+p.totalPutts+'P';if(sopts.ballverlust&&p.totalBV>0)extra+='  🔴'+p.totalBV+'BV';if(sopts.ladies&&p.totalLA>0)extra+='  🚺'+p.totalLA+'🍺';t+=m+' '+p.name+'  B:'+(p.bvp!=null?fmt(p.bvp):'–')+'  N:'+(p.nvp!=null?fmt(p.nvp):'–')+'  S:'+(p.stp!=null?p.stp:'–')+'  ('+p.pl+'/18)'+extra+'\n';});
   var ld=longestDriveStandings();if(ld&&ld.total){var ldLine=function(title,rows){if(!rows.length)return'';var s='\n📏 LONGEST DRIVE '+title+' · Bahn '+ld.hole+':\n';rows.forEach(function(r,i){var m=i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'.';s+=m+' '+r.name+'  '+r.dist+'m'+(r.club?' ('+r.club+')':'')+'\n';});return s;};t+=ldLine('HERREN',ld.herren)+ldLine('DAMEN',ld.damen);}
-  return t+'\n📊 Golf Turniermodus · uli438.github.io/Golfturniermodus';
+  return t+'\n🐦 Birdino';
 }
 async function shareResult(){var t=buildShareText();if(navigator.share){try{await navigator.share({title:'Golf Ergebnis',text:t});}catch(e){}}else copyText(t);}
 function copyText(text){if(navigator.clipboard){navigator.clipboard.writeText(text).then(function(){toast('📋 Kopiert!');});}else{var ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('📋 Kopiert!');}}
@@ -1806,7 +1821,7 @@ function renderTotal(){
   html+=rankBlock('⭐ Stableford-Rangliste',all.slice().sort(function(a,b){return b.sSum-a.sSum;}),function(p){return p.played>0?String(p.sSum)+'P':'–';},function(p){return p.details.map(function(d){return d.s!=null?'R'+d.r+':'+d.s+'P':'R'+d.r+':–';}).join('<br>');},function(p){return p.played>0?'#6a1b9a':'#aaa';});
   el.innerHTML=html;
 }
-function buildTrnText(){var t=G.tournament;if(!t)return'';var all=calcTotal();var txt='🏆 '+(t.name||'Turnier')+(CODE?' ['+CODE+']':'')+'\n'+(t.rounds||[]).length+' von '+t.totalRounds+' Runden\n\n';(t.rounds||[]).forEach(function(r){txt+='R'+r.roundNum+': '+r.courseName+' ('+r.date+') · '+modeName(r)+'\n';});txt+='\n🏌️ BRUTTO:\n';all.slice().sort(function(a,b){return a.bSum-b.bSum;}).forEach(function(p,i){var m=i===0&&p.played>0?'🥇':i===1&&p.played>0?'🥈':i===2&&p.played>0?'🥉':(i+1)+'.';txt+=m+' '+p.name+'  '+(p.played>0?fmt(p.bSum):'–')+'  ('+p.details.map(function(d){return d.b!=null?'R'+d.r+':'+fmt(d.b):'R'+d.r+':–';}).join(' ')+')\n';});txt+='\n🎯 NETTO:\n';all.slice().sort(function(a,b){return a.nSum-b.nSum;}).forEach(function(p,i){var m=i===0&&p.played>0?'🥇':i===1&&p.played>0?'🥈':i===2&&p.played>0?'🥉':(i+1)+'.';txt+=m+' '+p.name+'  '+(p.played>0?fmt(p.nSum):'–')+'  ('+p.details.map(function(d){return d.n!=null?'R'+d.r+':'+fmt(d.n):'R'+d.r+':–';}).join(' ')+')\n';});txt+='\n⭐ STABLEFORD:\n';all.slice().sort(function(a,b){return b.sSum-a.sSum;}).forEach(function(p,i){var m=i===0&&p.played>0?'🥇':i===1&&p.played>0?'🥈':i===2&&p.played>0?'🥉':(i+1)+'.';txt+=m+' '+p.name+'  '+(p.played>0?p.sSum+'P':'–')+'  ('+p.details.map(function(d){return d.s!=null?'R'+d.r+':'+d.s+'P':'R'+d.r+':–';}).join(' ')+')\n';});return txt+'\n📊 Golf Turniermodus · uli438.github.io/Golfturniermodus';}
+function buildTrnText(){var t=G.tournament;if(!t)return'';var all=calcTotal();var txt='🏆 '+(t.name||'Turnier')+(CODE?' ['+CODE+']':'')+'\n'+(t.rounds||[]).length+' von '+t.totalRounds+' Runden\n\n';(t.rounds||[]).forEach(function(r){txt+='R'+r.roundNum+': '+r.courseName+' ('+r.date+') · '+modeName(r)+'\n';});txt+='\n🏌️ BRUTTO:\n';all.slice().sort(function(a,b){return a.bSum-b.bSum;}).forEach(function(p,i){var m=i===0&&p.played>0?'🥇':i===1&&p.played>0?'🥈':i===2&&p.played>0?'🥉':(i+1)+'.';txt+=m+' '+p.name+'  '+(p.played>0?fmt(p.bSum):'–')+'  ('+p.details.map(function(d){return d.b!=null?'R'+d.r+':'+fmt(d.b):'R'+d.r+':–';}).join(' ')+')\n';});txt+='\n🎯 NETTO:\n';all.slice().sort(function(a,b){return a.nSum-b.nSum;}).forEach(function(p,i){var m=i===0&&p.played>0?'🥇':i===1&&p.played>0?'🥈':i===2&&p.played>0?'🥉':(i+1)+'.';txt+=m+' '+p.name+'  '+(p.played>0?fmt(p.nSum):'–')+'  ('+p.details.map(function(d){return d.n!=null?'R'+d.r+':'+fmt(d.n):'R'+d.r+':–';}).join(' ')+')\n';});txt+='\n⭐ STABLEFORD:\n';all.slice().sort(function(a,b){return b.sSum-a.sSum;}).forEach(function(p,i){var m=i===0&&p.played>0?'🥇':i===1&&p.played>0?'🥈':i===2&&p.played>0?'🥉':(i+1)+'.';txt+=m+' '+p.name+'  '+(p.played>0?p.sSum+'P':'–')+'  ('+p.details.map(function(d){return d.s!=null?'R'+d.r+':'+d.s+'P':'R'+d.r+':–';}).join(' ')+')\n';});return txt+'\n🐦 Birdino';}
 async function shareTrn(){var t=buildTrnText();if(navigator.share){try{await navigator.share({title:'Turnier Gesamt',text:t});}catch(e){}}else copyText(t);}
 
 // ════ GPS SCHLAGWEITE ════
@@ -1868,6 +1883,42 @@ async function gpsMeasure(idx){
   }
 }
 function GPS_MEASURE_CLUB(c){return c||'Schlag';}
+var LD_ARM_WATCH=null;
+var LD_GOOD_ACC=8; // Schwelle "grün" in Metern
+function ldArmUpdate(idx,acc){
+  var box=document.getElementById('ld-arm-'+idx);if(!box)return;
+  var good=acc!=null&&acc<=LD_GOOD_ACC;
+  var col=acc==null?'#999':(acc<=8?'#1f9e3a':acc<=15?'#e69500':'#c62828');
+  var txt=acc==null?'Suche Signal…':(good?'🟢 Bereit (±'+Math.round(acc)+' m)':'🔴 Signal '+Math.round(acc)+' m — bitte warten');
+  box.innerHTML='<div style="display:flex;align-items:center;gap:10px"><div style="width:18px;height:18px;border-radius:50%;background:'+col+';flex-shrink:0;box-shadow:0 0 0 4px '+col+'22"></div><div style="flex:1;font-size:13px;font-weight:700;color:'+col+'">'+txt+'</div></div>'+(good?'<button class="gps-btn" data-ld-set="'+idx+'" style="margin-top:8px;background:#1f9e3a">📍 Startpunkt setzen</button>':'<div style="font-size:11px;color:var(--txt3);margin-top:6px">Halte das Handy ruhig, bis die Ampel grün ist.</div>');
+  // Button binden
+  var setBtn=box.querySelector('[data-ld-set]');
+  if(setBtn)setBtn.addEventListener('click',function(){ldArmSetStart(idx);});
+}
+function ldArm(idx){
+  // Startet Live-Signalüberwachung (Ampel) für das Longest-Drive-Loch
+  if(!navigator.geolocation){toast('⚠️ GPS nicht verfügbar','rgba(198,40,40,.96)');return;}
+  ldArmStop();
+  LD_ARM={idx:idx,best:null};
+  ldArmUpdate(idx,null);
+  try{
+    LD_ARM_WATCH=navigator.geolocation.watchPosition(function(pos){
+      GPS_PERM=true;
+      var acc=pos.coords.accuracy;
+      LD_ARM.cur={lat:pos.coords.latitude,lng:pos.coords.longitude,acc:acc,t:Date.now()};
+      if(!LD_ARM.best||acc<LD_ARM.best.acc)LD_ARM.best=LD_ARM.cur;
+      ldArmUpdate(idx,acc);
+    },function(err){toast('⚠️ GPS: '+(err.message||'kein Signal'),'rgba(198,40,40,.96)');},{enableHighAccuracy:true,timeout:15000,maximumAge:0});
+  }catch(e){}
+}
+function ldArmStop(){if(LD_ARM_WATCH!=null&&navigator.geolocation){try{navigator.geolocation.clearWatch(LD_ARM_WATCH);}catch(e){}}LD_ARM_WATCH=null;}
+function ldArmSetStart(idx){
+  if(!LD_ARM||!LD_ARM.cur){toast('⚠️ Noch kein Signal','rgba(198,40,40,.96)');return;}
+  var clubSel=document.getElementById('gps-club-'+idx);var club=clubSel?clubSel.value:CLUBS[0];
+  GPS_MEASURE={idx:idx,stage:'start',start:{lat:LD_ARM.cur.lat,lng:LD_ARM.cur.lng,acc:LD_ARM.cur.acc},club:club};
+  ldArmStop();LD_ARM=null;
+  toast('📍 Start gesetzt — geh zum Ball und tippe „Ende messen"','#1f9e3a');renderHoles();
+}
 function delShot(idx,si){if(CEXT[idx]&&CEXT[idx].shots){CEXT[idx].shots.splice(si,1);renderHoles();trigAS();}}
 
 // ════ SPIELANALYSE ════
@@ -1998,9 +2049,82 @@ function shareAnalyse(pid){
   var f9=bruttoPlayed.filter(function(h){return h.idx<9;}),b9=bruttoPlayed.filter(function(h){return h.idx>=9;});
   if(f9.length>0&&b9.length>0)t+='Front 9: '+fmt(f9.reduce(function(a,h){return a+(h.diff||0);},0))+' · Back 9: '+fmt(b9.reduce(function(a,h){return a+(h.diff||0);},0))+'\n';
   t+='\nLOCH FÜR LOCH\n';played.forEach(function(h){var line='L'+(h.idx+1)+' (P'+h.pv+'): '+(h.isNR&&!h.ndbCap?'NR':h.eff)+' '+(h.diff!=null?fmt(h.diff):'');if(h.putts)line+=' · '+h.putts+'P';if(h.gir!==null)line+=' · GIR:'+(h.gir?'✅':'❌');if(h.absch)line+=' · Ri.:'+h.absch;if(h.abschLaenge)line+=' · Lg.:'+h.abschLaenge;if(h.annDist)line+=' · Ann.:'+h.annDist+'m';t+=line+'\n';});
-  t+='\n📊 Golf Turniermodus · uli438.github.io/Golfturniermodus';
-  if(navigator.share){navigator.share({title:'Spielanalyse '+p.name,text:t}).catch(function(){});}else copyText(t);
+  t+='\n🐦 Birdino';
+  // Daten für die Bild-Karte bündeln
+  var imgData={name:p.name,date:G.round.date||'',course:G.round.courseName||'',hcp:hd(hcp),bruttoSum:bruttoSum,bruttoVsPar:bruttoSum-parSum,netSum:netSum,cats:cats,puttsSum:puttsSum,girHit:girHit,girN:girPlayed.length,played:played};
+  shareAnalyseImage(imgData,t,p.name);
 }
+function dcCanvas(v){return v<0?'#1f9e3a':v===0?'#1f8fd6':v<=1?'#e69500':'#c62828';}
+async function shareAnalyseImage(d,fallbackText,pname){
+  try{
+    var W=1080,pad=60,rowH=58,headerH=380,nRows=d.played.length;
+    var tableTop=headerH+250;
+    var H=tableTop+rowH*(nRows+1)+120;
+    var c=document.createElement('canvas');c.width=W;c.height=H;var x=c.getContext('2d');
+    // Hintergrund
+    x.fillStyle='#f4f7f6';x.fillRect(0,0,W,H);
+    // Kopf-Band (Verlauf grün→blau)
+    var grad=x.createLinearGradient(0,0,W,headerH);grad.addColorStop(0,'#1f8fd6');grad.addColorStop(1,'#3a9e1e');
+    x.fillStyle=grad;roundRectC(x,0,0,W,headerH,0);x.fill();
+    // Titel
+    x.fillStyle='#fff';x.textBaseline='alphabetic';
+    x.font='700 40px Inter,Arial,sans-serif';x.fillText('🐦 Birdino · Spielanalyse',pad,90);
+    x.font='800 64px Inter,Arial,sans-serif';x.fillText(d.name,pad,170);
+    x.font='400 32px Inter,Arial,sans-serif';x.fillStyle='rgba(255,255,255,.9)';
+    x.fillText(d.date+'  ·  '+d.course,pad,225);
+    x.fillText('HCP '+d.hcp,pad,272);
+    // Ergebnis-Kacheln (überlappen das Band)
+    var cardY=headerH-60,cardW=(W-pad*2-40)/3,cardH=200;
+    function statCard(cx,label,val,sub,col){
+      x.fillStyle='#fff';roundRectC(x,cx,cardY,cardW,cardH,24);x.fill();
+      x.shadowColor='rgba(0,0,0,0)';
+      x.textAlign='center';
+      x.fillStyle=col||'#0d2818';x.font='800 64px Inter,Arial,sans-serif';x.fillText(val,cx+cardW/2,cardY+95);
+      x.fillStyle='#7a8893';x.font='700 26px Inter,Arial,sans-serif';x.fillText(label,cx+cardW/2,cardY+140);
+      if(sub){x.fillStyle='#95a3ab';x.font='400 24px Inter,Arial,sans-serif';x.fillText(sub,cx+cardW/2,cardY+175);}
+      x.textAlign='left';
+    }
+    statCard(pad,'BRUTTO',(d.bruttoVsPar>0?'+':'')+d.bruttoVsPar,d.bruttoSum+' Schläge',dcCanvas(d.bruttoVsPar));
+    statCard(pad+cardW+20,'NETTO',(d.netSum>0?'+':'')+d.netSum,'',dcCanvas(d.netSum));
+    var girTxt=d.girN>0?Math.round(d.girHit/d.girN*100)+'%':'–';
+    statCard(pad+cardW*2+40,(d.puttsSum>0?'PUTTS':'GIR'),(d.puttsSum>0?String(d.puttsSum):girTxt),(d.puttsSum>0?'':d.girHit+'/'+d.girN),'#6a1b9a');
+    // Tabellen-Kopf
+    var ty=tableTop;
+    x.fillStyle='#0d2818';x.font='800 30px Inter,Arial,sans-serif';x.fillText('LOCH FÜR LOCH',pad,ty-20);
+    var cols=[{t:'Loch',w:120},{t:'Par',w:120},{t:'Score',w:160},{t:'±',w:140}];
+    var hasPutts=d.puttsSum>0;if(hasPutts)cols.push({t:'Putts',w:140});
+    x.fillStyle='#eaf0ee';roundRectC(x,pad,ty,W-pad*2,rowH,12);x.fill();
+    x.fillStyle='#7a8893';x.font='700 26px Inter,Arial,sans-serif';
+    var cx0=pad+24;cols.forEach(function(co){x.fillText(co.t,cx0,ty+38);cx0+=co.w;});
+    // Tabellen-Zeilen
+    d.played.forEach(function(h,ri){
+      var ry=ty+rowH*(ri+1);
+      if(ri%2===0){x.fillStyle='#fff';x.fillRect(pad,ry,W-pad*2,rowH);}
+      var cxx=pad+24;
+      x.fillStyle='#0d2818';x.font='700 30px Inter,Arial,sans-serif';x.fillText('L'+(h.idx+1),cxx,ry+38);cxx+=cols[0].w;
+      x.fillStyle='#95a3ab';x.font='400 28px Inter,Arial,sans-serif';x.fillText(String(h.pv),cxx,ry+38);cxx+=cols[1].w;
+      x.fillStyle='#0d2818';x.font='800 32px Inter,Arial,sans-serif';x.fillText((h.isNR&&!h.ndbCap?'NR':String(h.eff)),cxx,ry+38);cxx+=cols[2].w;
+      x.fillStyle=h.diff!=null?dcCanvas(h.diff):'#aaa';x.font='800 30px Inter,Arial,sans-serif';x.fillText(h.diff!=null?fmt(h.diff):'–',cxx,ry+38);cxx+=cols[3].w;
+      if(hasPutts){x.fillStyle='#0d2818';x.font='400 28px Inter,Arial,sans-serif';x.fillText(h.putts?String(h.putts):'–',cxx,ry+38);}
+    });
+    // Fußzeile
+    x.fillStyle='#95a3ab';x.font='400 26px Inter,Arial,sans-serif';x.textAlign='center';
+    x.fillText('🐦 Birdino · Turniere organisieren · live mitspielen',W/2,H-40);
+    x.textAlign='left';
+    // In Blob wandeln und teilen
+    c.toBlob(async function(blob){
+      if(!blob){copyText(fallbackText);return;}
+      var file=new File([blob],'birdino-analyse.png',{type:'image/png'});
+      if(navigator.canShare&&navigator.canShare({files:[file]})){
+        try{await navigator.share({files:[file],title:'Spielanalyse '+pname});return;}catch(e){if(e&&e.name==='AbortError')return;}
+      }
+      // Fallback: Bild herunterladen
+      var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download='birdino-analyse.png';document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(function(){URL.revokeObjectURL(url);},2000);
+      toast('📷 Bild gespeichert');
+    },'image/png');
+  }catch(e){copyText(fallbackText);}
+}
+function roundRectC(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
 </script>
 </body>
 </html>
