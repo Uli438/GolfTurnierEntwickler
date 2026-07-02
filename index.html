@@ -672,6 +672,14 @@ input,select,button{font-family:'DM Sans',sans-serif}
       <div id="dev-cleanup-list"></div>
     </div>
 
+    <div class="dev-sec">SPIELER-VERZEICHNIS (pid)</div>
+    <div class="lcard">
+      <div class="lcard-title">🆔 FESTE SPIELER-IDs</div>
+      <div style="font-size:11px;color:var(--txt2);margin-bottom:12px;line-height:1.5">Jeder Spieler hat eine feste ID (pid), die über Turniere hinweg gleich bleibt — auch bei wechselndem Anzeigenamen. Grundlage für Historie, Liga und späteren Login.</div>
+      <button id="dev-registry-load" style="width:100%;padding:12px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:10px">🔄 Verzeichnis laden</button>
+      <div id="dev-registry-list"></div>
+    </div>
+
     <div class="dev-sec">NUTZUNG &amp; TRACKING</div>
     <div class="lcard">
       <div class="lcard-title" style="display:flex;align-items:center;justify-content:space-between"><span>📊 AKTIVITÄT &amp; ONLINE-STATUS</span><button id="dev-activity-refresh" style="background:var(--accent);border:none;border-radius:8px;color:#fff;font-size:11px;font-weight:700;padding:5px 10px;cursor:pointer">↻ Laden</button></div>
@@ -926,6 +934,7 @@ document.addEventListener('DOMContentLoaded',function(){
   var clDays=document.getElementById('dev-cleanup-days');if(clDays)clDays.addEventListener('change',function(){var d=parseInt(this.value);if(d>0&&d<=365)saveCleanupCfg('days',d);});
   var clProt=document.getElementById('dev-cleanup-protect');if(clProt)clProt.addEventListener('change',function(){saveCleanupCfg('protect',this.value.trim());});
   var clCheck=document.getElementById('dev-cleanup-check');if(clCheck)clCheck.addEventListener('click',cleanupPreview);
+  var regBtn=document.getElementById('dev-registry-load');if(regBtn)regBtn.addEventListener('click',loadRegistry);
   document.getElementById('dev-sw-code').addEventListener('change',function(){var v=this.value.trim();if(/^\d{3}$/.test(v))saveScorecardWarn(v,null);});
   document.getElementById('dev-sw-except').addEventListener('change',function(){var v=this.value.trim();if(/^\d{3}$/.test(v))saveScorecardWarn('all',v);});
   DEVICE_ID=getDeviceId();
@@ -938,7 +947,23 @@ function loadScript(src){return new Promise(function(res,rej){var s=document.cre
 async function initFB(){if(DB)return;await loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js');await loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js');if(!firebase.apps.length)firebase.initializeApp(FB_CFG);DB=firebase.database();fbSet=function(path,data){return DB.ref(path).set(data);};}
 function fp(sub){return'turniere/'+CODE+(sub?'/'+sub:'');}
 function stopListeners(){OFF.forEach(function(fn){fn();});OFF=[];}
-function parsePlayers(val){if(!val)return[];if(Array.isArray(val))return val.filter(Boolean);return Object.values(val).filter(Boolean);}
+function genPid(){return 'p_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
+function ensurePid(p){if(p&&!p.pid)p.pid=genPid();return p;}
+function registerPlayer(pid,name,hcp,code){
+  if(!DB||!pid||!name)return;
+  try{
+    var ref=DB.ref('players_registry/'+pid);
+    var upd={lastName:name,lastSeen:new Date().toISOString()};
+    if(hcp!=null&&hcp!=='')upd.handicap=hcp;
+    if(code)upd.lastCode=code;
+    ref.update(upd);
+    // Namen als Set (jeder gesehene Name = eigener Schlüssel), sicher gegen Firebase-verbotene Zeichen
+    var key=String(name).replace(/[.#$/\[\]]/g,'_').trim();
+    if(key)ref.child('names/'+key).set(true);
+  }catch(e){}
+}
+function registerAllPlayers(players,code){if(!players)return;players.forEach(function(p){if(p&&p.pid)registerPlayer(p.pid,p.name,p.handicap,code);});}
+function parsePlayers(val){if(!val)return[];var arr=Array.isArray(val)?val.filter(Boolean):Object.values(val).filter(Boolean);return arr.map(ensurePid);}
 function startListeners(){
   stopListeners();var firstPlayers=true;
   var r4=DB.ref(fp('notif')).on('value',function(snap){NOTIF_ON=!!snap.val();});
@@ -1148,6 +1173,21 @@ async function cleanupPreview(){
     });
   }catch(e){if(box)box.innerHTML='<div style="text-align:center;padding:14px;color:var(--red);font-size:12px">⚠️ Fehler bei der Prüfung</div>';}
 }
+async function loadRegistry(){
+  var box=document.getElementById('dev-registry-list');if(box)box.innerHTML='<div style="text-align:center;padding:14px;color:var(--txt3);font-size:12px">⏳ Lade…</div>';
+  try{
+    await initFB();
+    var snap=await DB.ref('players_registry').get();
+    if(!snap||!snap.exists()){box.innerHTML='<div style="text-align:center;padding:14px;color:var(--txt3);font-size:12px">Noch keine Einträge. Starte ein Turnier mit Spielern.</div>';return;}
+    var all=snap.val();
+    var rows=Object.keys(all).map(function(pid){var e=all[pid]||{};var names=e.names?Object.keys(e.names):(e.lastName?[e.lastName]:[]);return{pid:pid,names:names,lastName:e.lastName||names[0]||'?',hcp:e.handicap,lastSeen:e.lastSeen||''};});
+    rows.sort(function(a,b){return(b.lastSeen||'').localeCompare(a.lastSeen||'');});
+    box.innerHTML='<div style="font-size:11px;color:var(--txt3);margin-bottom:8px">'+rows.length+' Spieler im Verzeichnis</div>'+rows.map(function(r){
+      var alt=r.names.filter(function(n){return n!==r.lastName;});
+      return '<div style="padding:9px 12px;background:var(--card);border:1px solid var(--border-light);border-radius:10px;margin-bottom:6px"><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;font-size:13px;font-weight:700">'+esc(r.lastName)+(r.hcp!=null?' <span style="font-weight:400;color:var(--txt3)">HCP '+esc(String(r.hcp))+'</span>':'')+'</div></div><div style="font-size:10px;color:var(--txt3);font-family:monospace;margin-top:3px">'+esc(r.pid)+'</div>'+(alt.length?'<div style="font-size:10px;color:var(--txt2);margin-top:3px">auch: '+alt.map(esc).join(', ')+'</div>':'')+'</div>';
+    }).join('');
+  }catch(e){if(box)box.innerHTML='<div style="text-align:center;padding:14px;color:var(--red);font-size:12px">⚠️ Fehler beim Laden</div>';}
+}
 async function saveScorecardWarn(val,except){
   var st=document.getElementById('dev-sw-status');if(st){st.textContent='⏳ Speichere…';st.style.color='var(--txt3)';}
   try{
@@ -1196,7 +1236,7 @@ function saveLoc(id,sc){try{localStorage.setItem(LS_LOC+id,JSON.stringify(sc));}
 function loadLoc(id){try{var r=localStorage.getItem(LS_LOC+id);return r?JSON.parse(r):null;}catch(e){return null;}}
 function clearLoc(id){try{localStorage.removeItem(LS_LOC+id);}catch(e){}}
 function trigAS(){saveLoc(CID,CS);clearTimeout(aTimer);aTimer=setTimeout(pushFB,2000);}
-async function pushFB(){if(!CID||!CODE)return;aTimer=null;if(!navigator.onLine){syncDot('off');pSync=true;return;}syncDot('save');try{var extra={scores:CS.slice(),extras:CEXT.slice()};var opts=G.round.options||{};if(opts.zaehler&&MARK_ID){extra.markedScores=CMARK.slice();extra.marks=MARK_ID;}var updated=Object.assign({},G.players.find(function(p){return p.id===CID;}),extra);G.players=G.players.map(function(p){return p.id===CID?updated:p;});saveSnap(updated);await fbSet(fp('players/'+CID),updated);clearLoc(CID);pSync=false;syncDot('on');if(scoreLogEnabled())renderScoreLog();}catch(e){syncDot('off');pSync=true;}}
+async function pushFB(){if(!CID||!CODE)return;aTimer=null;if(!navigator.onLine){syncDot('off');pSync=true;return;}syncDot('save');try{var extra={scores:CS.slice(),extras:CEXT.slice()};var opts=G.round.options||{};if(opts.zaehler&&MARK_ID){extra.markedScores=CMARK.slice();extra.marks=MARK_ID;}var updated=Object.assign({},G.players.find(function(p){return p.id===CID;}),extra);G.players=G.players.map(function(p){return p.id===CID?updated:p;});saveSnap(updated);await fbSet(fp('players/'+CID),updated);if(updated.pid)registerPlayer(updated.pid,updated.name,updated.handicap,CODE);clearLoc(CID);pSync=false;syncDot('on');if(scoreLogEnabled())renderScoreLog();}catch(e){syncDot('off');pSync=true;}}
 window.addEventListener('online',async function(){syncDot('on');if(pSync)await pushFB();});
 window.addEventListener('offline',function(){syncDot('off');});
 
@@ -1576,7 +1616,7 @@ function copyText(text){if(navigator.clipboard){navigator.clipboard.writeText(te
 
 // ════ SETUP ════
 function initSetup(){
-  SP=G.players.map(function(p){return Object.assign({},p);});SPAR=(G.round.par||DPAR).slice();SSI=(G.round.strokeIndex||DSI).slice();SAC=null;SAT=null;STM=G.round.teamMode||'none';
+  SP=G.players.map(function(p){return ensurePid(Object.assign({},p));});SPAR=(G.round.par||DPAR).slice();SSI=(G.round.strokeIndex||DSI).slice();SAC=null;SAT=null;STM=G.round.teamMode||'none';
   var hint=document.getElementById('setup-trn-hint'),titleEl=document.getElementById('setup-title');
   if(G.tournament&&G.tournament.totalRounds>1){
     var cur=G.tournament.currentRound||1,total=G.tournament.totalRounds,doneNums=(G.tournament.rounds||[]).map(function(r){return r.roundNum;}),isDone=doneNums.indexOf(cur)>=0;
@@ -1692,7 +1732,7 @@ function renderPList(){
   if(showT){document.querySelectorAll('.tdot').forEach(function(el){if(el.dataset.id)el.addEventListener('click',function(){var p=SP.find(function(p){return p.id===this.dataset.id;}.bind(this));if(p){p.team=parseInt(this.dataset.t);renderPList();}}.bind(el));});}
   if(STM==='americans'&&SP.length>=4)renderAmPrev();
 }
-function addPlayer(){var name=document.getElementById('new-name').value.trim();if(!name)return;var hcp=document.getElementById('new-hcp').value;SP.push({id:Date.now().toString(),name:name,handicap:hcp!==''?Number(hcp):0,scores:Array(18).fill(null),team:SP.length%2,flight:1,gps:false});document.getElementById('new-name').value='';document.getElementById('new-hcp').value='';renderPList();renderFlights();}
+function addPlayer(){var name=document.getElementById('new-name').value.trim();if(!name)return;var hcp=document.getElementById('new-hcp').value;SP.push({id:Date.now().toString(),pid:genPid(),name:name,handicap:hcp!==''?Number(hcp):0,scores:Array(18).fill(null),team:SP.length%2,flight:1,gps:false});document.getElementById('new-name').value='';document.getElementById('new-hcp').value='';renderPList();renderFlights();}
 async function resetScores(){var ok=await askConfirm('Alle Scores zurücksetzen?','Zurücksetzen','var(--red)');if(!ok)return;SP=SP.map(function(p){return Object.assign({},p,{scores:Array(18).fill(null)});});renderPList();if(CODE)try{await Promise.all(SP.map(function(p){return fbSet(fp('players/'+p.id),p);}));toast('✅ Scores zurückgesetzt');}catch(e){toast('📶 Lokal zurückgesetzt');}}
 async function saveSetup(){
   for(var i=0;i<18;i++){var pe=document.getElementById('par-'+i),se=document.getElementById('si-'+i);if(pe)SPAR[i]=Number(pe.value)||4;if(se)SSI[i]=se.value!==''?Number(se.value)||i+1:i+1;}
@@ -1705,7 +1745,7 @@ async function saveSetup(){
   G.players=SP;var trnR=parseInt(document.getElementById('trn-rounds').value)||0;
   if(trnR>1){if(!G.tournament||G.tournament.totalRounds!==trnR)G.tournament={totalRounds:trnR,currentRound:1,name:cname,rounds:[]};}else G.tournament=null;
   if(!CODE)CODE=genCode();NOTIF_ON=gv('opt-notif');saveRec(CODE,cname);document.getElementById('code-badge').textContent='🔑 '+CODE;
-  try{await initFB();await fbSet(fp('players'),null);await fbSet(fp('round'),G.round);await Promise.all(G.players.map(function(p){return fbSet(fp('players/'+p.id),p);}));await fbSet(fp('tournament'),G.tournament||null);await fbSet(fp('notif'),NOTIF_ON);try{await DB.ref('turniere/'+CODE+'/meta/lastSeen').set(new Date().toISOString());}catch(e){}toast('✓ Turnier '+CODE+' gestartet');startListeners();trackPresence(CODE);}catch(e){toast('⚠️ Firebase nicht erreichbar');}
+  try{await initFB();await fbSet(fp('players'),null);await fbSet(fp('round'),G.round);await Promise.all(G.players.map(function(p){return fbSet(fp('players/'+p.id),p);}));await fbSet(fp('tournament'),G.tournament||null);await fbSet(fp('notif'),NOTIF_ON);try{await DB.ref('turniere/'+CODE+'/meta/lastSeen').set(new Date().toISOString());}catch(e){}registerAllPlayers(G.players,CODE);toast('✓ Turnier '+CODE+' gestartet');startListeners();trackPresence(CODE);}catch(e){toast('⚠️ Firebase nicht erreichbar');}
   LIVE_ROUND=G.round;LIVE_PLAYERS=G.players.slice();VIEW_RND=null;renderLB();refreshTrnUI();showView('lb');
 }
 
