@@ -150,6 +150,15 @@ input,select,button{font-family:'DM Sans',sans-serif}
 .hinfo{text-align:center}
 .hnum{font-size:clamp(14px,4vw,16px);font-weight:700}
 .hpar{font-size:clamp(11px,3vw,12px);color:var(--txt3);font-weight:600}
+.hrow.filled .hnum{color:var(--accent)}
+.hcell{border-bottom:1px solid var(--border-light)}
+.hcell .hrow{border-bottom:none}
+.hrow-title{display:flex;align-items:center;gap:10px;padding:9px 14px 5px}
+.hrow-title .lochbadge{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:34px;border-radius:10px;background:var(--accent);color:#fff;font-size:18px;font-weight:800;box-shadow:0 3px 8px rgba(31,143,214,.3)}
+.hrow-title .lochttl{font-size:16px;font-weight:800;color:var(--accent)}
+.hrow-title .lochpar{font-size:12px;font-weight:600;color:var(--txt3);margin-left:auto}
+.hcell.filled .hrow-title .lochbadge{background:#3a9e1e;box-shadow:0 3px 8px rgba(58,158,30,.3)}
+.hcell.filled .hrow-title .lochttl{color:#3a9e1e}
 .hex{font-size:clamp(10px,2.5vw,11px)}
 .stepper{display:flex;align-items:center;background:var(--card);border:3px solid var(--border);border-radius:14px;overflow:hidden;height:clamp(60px,15vw,68px)}
 .stbtn{background:none;border:none;color:var(--accent);font-size:clamp(34px,9vw,40px);width:clamp(60px,15vw,68px);height:clamp(60px,15vw,68px);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;user-select:none;-webkit-user-select:none;touch-action:manipulation;font-weight:900}
@@ -1405,7 +1414,8 @@ function renderHoles(){
     var c4=(isNR&&!ndbCap)?(isStbl()?'<div class="stbl serif" style="color:#aaa">0</div>':'<div class="rv serif" style="color:#aaa">NR</div>'):(mode==='stableford'?(sv!=null?'<div class="stbl serif">'+sv+'</div>':'<span class="dash">–</span>'):mode==='stableford_brutto'?(raw!=null?'<div class="stbl serif">'+stblBrutto(raw,pv)+'</div>':'<span class="dash">–</span>'):(nd!=null?'<div class="rv serif" style="color:'+dc(nd)+'">'+fmt(nd)+'</div><div class="rl" style="color:'+dc(nd)+'">'+dl(nd)+'</div>':'<span class="dash">–</span>'));
     var stvalClass=raw==null?'stval empty':(isNR&&!ndbCap)?'stval empty':'stval';
     var stvalTxt=raw==null?'–':(isNR&&!ndbCap)?'NR':(ndbCap||raw);
-    return'<div class="hrow'+(raw!=null?' filled':'')+(capped?' capped':'')+'" id="hr-'+i+'"><div class="hinfo"><div class="hnum serif">'+(i+1)+'</div><div class="hpar">P'+pv+'·SI'+siv+'</div>'+exH+capH+'</div><div class="stepper"><button class="stbtn" data-idx="'+i+'" data-d="-1">−</button><div class="'+stvalClass+'" id="sv-'+i+'">'+stvalTxt+'</div><button class="stbtn" data-idx="'+i+'" data-d="1">+</button></div><div class="hres" id="br-'+i+'">'+brHTML+'</div><div class="hres" id="ne-'+i+'">'+c4+'</div></div>';
+    var titleBar='<div class="hrow-title"><span class="lochbadge">'+(i+1)+'</span><span class="lochttl">Loch '+(i+1)+'</span><span class="lochpar">Par '+pv+(siv!=null&&siv!==''?' · SI '+siv:'')+'</span></div>';
+    return'<div class="hcell'+(raw!=null?' filled':'')+'" id="hc-'+i+'">'+titleBar+'<div class="hrow'+(raw!=null?' filled':'')+(capped?' capped':'')+'" id="hr-'+i+'"><div class="hinfo">'+(exH||capH?exH+capH:'<div class="hpar">P'+pv+'</div>')+'</div><div class="stepper"><button class="stbtn" data-idx="'+i+'" data-d="-1">−</button><div class="'+stvalClass+'" id="sv-'+i+'">'+stvalTxt+'</div><button class="stbtn" data-idx="'+i+'" data-d="1">+</button></div><div class="hres" id="br-'+i+'">'+brHTML+'</div><div class="hres" id="ne-'+i+'">'+c4+'</div></div></div>';
   }).join('');
   document.querySelectorAll('.stbtn').forEach(function(btn){btn.addEventListener('click',function(){step(parseInt(this.dataset.idx),parseInt(this.dataset.d));});});
   var opts=G.round.options||{};
@@ -1450,7 +1460,7 @@ function renderHoles(){
       var gLabel=gstage==='ready'?'📍 Start messen (am Abschlag)':gstage==='start'?'📍 Ende messen (am Ball)':'📏 GPS vorbereiten';
       html+='<div class="gps-row"><select class="gps-club" id="gps-club-'+i+'"'+(gstage?' disabled':'')+'>'+clubOpts+'</select><button class="gps-btn'+(gstage?' measuring':'')+'" id="gps-btn-'+i+'" data-gps-idx="'+i+'">'+gLabel+'</button>'+shotsHtml+'</div>';
     }
-    exDiv.innerHTML=html;row.after(exDiv);
+    exDiv.innerHTML=html;var cell=document.getElementById('hc-'+i)||row;cell.appendChild(exDiv);
   });
   document.querySelectorAll('[data-ex]').forEach(function(btn){btn.addEventListener('click',function(){CEXT[parseInt(this.dataset.idx)][this.dataset.ex]=!CEXT[parseInt(this.dataset.idx)][this.dataset.ex];renderHoles();trigAS();});});
   document.querySelectorAll('[data-bv-add]').forEach(function(btn){btn.addEventListener('click',function(){var idx=parseInt(this.dataset.idx),d=parseInt(this.dataset.bvAdd);CEXT[idx].bv=Math.max(0,(Number(CEXT[idx].bv)||0)+d);renderHoles();trigAS();});});
