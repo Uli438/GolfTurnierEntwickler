@@ -1358,9 +1358,22 @@ function doOpenCard(id){
   var p=G.players.find(function(p){return p.id===id;});if(!p)return;
   CID=id;CS=p.scores?p.scores.slice():Array(18).fill(null);
   CEXT=Array(18).fill(null).map(function(_,i){var ex=(p.extras&&p.extras[i])||{};return{bv:Number(ex.bv)||0,la:!!ex.la,putts:Number(ex.putts)||0,absch:ex.absch||null,abschLaenge:ex.abschLaenge||null,annDist:ex.annDist||null,annTref:!!ex.annTref,fir:!!ex.fir,sand:!!ex.sand,shots:Array.isArray(ex.shots)?ex.shots.slice():[],ldGender:ex.ldGender||null,ldFairway:!!ex.ldFairway};});
-  // Zähler-Modus: Marker-Daten laden
+  // Zähler-Modus: Marker-Daten laden (robust)
   var opts=G.round.options||{};
-  if(opts.zaehler&&p.marks){MARK_ID=p.marks;CMARK=(p.markedScores&&Array.isArray(p.markedScores))?p.markedScores.slice():Array(18).fill(null);while(CMARK.length<18)CMARK.push(null);}else{MARK_ID=null;CMARK=Array(18).fill(null);}
+  if(opts.zaehler){
+    var markId=p.marks||null;
+    // Prüfen, ob der Marker-Spieler noch existiert
+    var markExists=markId&&G.players.some(function(x){return x.id===markId;});
+    if(!markExists){
+      // Marker fehlt oder ungültig → aus eigenem Flight rekonstruieren
+      var myFlight=p.flight||1;
+      var mate=G.players.find(function(x){return x.id!==p.id&&(x.flight||1)===myFlight;});
+      markId=mate?mate.id:null;
+      if(markId&&CODE)try{fbSet(fp('players/'+p.id+'/marks'),markId);}catch(e){}
+    }
+    MARK_ID=markId;
+    CMARK=(p.markedScores&&Array.isArray(p.markedScores))?p.markedScores.slice():Array(18).fill(null);while(CMARK.length<18)CMARK.push(null);
+  }else{MARK_ID=null;CMARK=Array(18).fill(null);}
   Z_SLOT='self';
   var loc=loadLoc(id);if(loc&&Array.isArray(loc)&&loc.length===18&&loc.filter(function(s){return s!=null;}).length>CS.filter(function(s){return s!=null;}).length){CS=loc.slice();setTimeout(pushFB,300);}
   CTAB=localStorage.getItem(LS_TAB+id)||(pc(CS)>=9?'back':'front');
