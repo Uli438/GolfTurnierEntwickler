@@ -166,6 +166,7 @@ input,select,button{font-family:'DM Sans',sans-serif}
 .stbtn:active{background:#bbdefb}
 .stval{flex:1;text-align:center;font-size:clamp(30px,8vw,36px);font-weight:900;font-family:'Cormorant Garamond',serif;pointer-events:none}
 .stval.empty{color:#aaa;font-size:clamp(17px,4vw,20px);font-weight:400}
+.stval.nr,.zval.nr{color:#111;font-weight:700}
 .hres{text-align:center}
 .rv{font-size:clamp(13px,3.5vw,15px);font-weight:700}
 .rl{font-size:clamp(8px,2vw,8px);opacity:.7}
@@ -1438,7 +1439,7 @@ function renderHoles(){
     var capH=(capped||ndbCap)?'<div style="font-size:9px;color:#e65100;font-weight:700;line-height:1">🔒'+(ndbCap||eff)+'</div>':'';
     var brHTML=(isNR&&!ndbCap)?'<div class="rv serif" style="color:#aaa">NR</div>':(bd!=null?'<div class="rv serif" style="color:'+dc(bd)+'">'+fmt(bd)+'</div><div class="rl" style="color:'+dc(bd)+'">'+dl(bd)+'</div>':'<span class="dash">–</span>');
     var c4=(isNR&&!ndbCap)?(isStbl()?'<div class="stbl serif" style="color:#aaa">0</div>':'<div class="rv serif" style="color:#aaa">NR</div>'):(mode==='stableford'?(sv!=null?'<div class="stbl serif">'+sv+'</div>':'<span class="dash">–</span>'):mode==='stableford_brutto'?(raw!=null?'<div class="stbl serif">'+stblBrutto(raw,pv)+'</div>':'<span class="dash">–</span>'):(nd!=null?'<div class="rv serif" style="color:'+dc(nd)+'">'+fmt(nd)+'</div><div class="rl" style="color:'+dc(nd)+'">'+dl(nd)+'</div>':'<span class="dash">–</span>'));
-    var stvalClass=raw==null?'stval empty':(isNR&&!ndbCap)?'stval empty':'stval';
+    var stvalClass=raw==null?'stval empty':(isNR&&!ndbCap)?'stval empty nr':'stval';
     var stvalTxt=raw==null?'–':(isNR&&!ndbCap)?'NR':(ndbCap||raw);
     var titleBar='<div class="hrow-title"><span class="lochbadge">'+(i+1)+'</span><span class="lochttl">Loch '+(i+1)+'</span><span class="lochpar">Par '+pv+(siv!=null&&siv!==''?' · SI '+siv:'')+'</span></div>';
     return'<div class="hcell'+(raw!=null?' filled':'')+'" id="hc-'+i+'">'+titleBar+'<div class="hrow'+(raw!=null?' filled':'')+(capped?' capped':'')+'" id="hr-'+i+'"><div class="hinfo">'+(exH||capH?exH+capH:'<div class="hpar">P'+pv+'</div>')+'</div><div class="stepper"><button class="stbtn" data-idx="'+i+'" data-d="-1">−</button><div class="'+stvalClass+'" id="sv-'+i+'">'+stvalTxt+'</div><button class="stbtn" data-idx="'+i+'" data-d="1">+</button></div><div class="hres" id="br-'+i+'">'+brHTML+'</div><div class="hres" id="ne-'+i+'">'+c4+'</div></div></div>';
@@ -1517,8 +1518,8 @@ function renderHolesZaehler(){
   html+=holes.map(function(i){
     var pv=par[i]||4,siv=si[i]!=null&&si[i]!==''?si[i]:i+1;
     var sR=CS[i],mR=CMARK[i];
-    var sTxt=sR==null?'–':(sR===0?'NR':sR),sCls=sR==null?'zval empty':(sR===0?'zval empty':'zval');
-    var mTxt=mR==null?'–':(mR===0?'NR':mR),mCls=mR==null?'zval empty':(mR===0?'zval empty':'zval');
+    var sTxt=sR==null?'–':(sR===0?'NR':sR),sCls=sR==null?'zval empty':(sR===0?'zval empty nr':'zval');
+    var mTxt=mR==null?'–':(mR===0?'NR':mR),mCls=mR==null?'zval empty':(mR===0?'zval empty nr':'zval');
     // Abgleich gegen Selbsteintrag des gezählten Spielers
     var mpSelf=(mp.scores&&mp.scores[i]!=null)?mp.scores[i]:null;
     var mismatch=(mR!=null&&mpSelf!=null&&mR!==mpSelf);
@@ -1578,7 +1579,7 @@ function zstep(slot,idx,delta){
   var arr=slot==='self'?CS:CMARK;
   var cur=arr[idx],next;if(cur==null)next=delta>0?pv:0;else next=cur+delta;if(next<0)next=0;if(next>15)next=15;arr[idx]=next;
   var valEl=document.getElementById((slot==='self'?'zsv-':'zmv-')+idx);
-  if(valEl){if(next===0){valEl.textContent='NR';valEl.className='zval empty';}else{valEl.textContent=next;valEl.className='zval';}}
+  if(valEl){if(next===0){valEl.textContent='NR';valEl.className='zval empty nr';}else{valEl.textContent=next;valEl.className='zval';}}
   // Zeile auf Mismatch prüfen
   var mp=markedPlayer();var row=document.getElementById('zr-'+idx);
   if(mp&&row){var mpSelf=(mp.scores&&mp.scores[idx]!=null)?mp.scores[idx]:null;var mismatch=(CMARK[idx]!=null&&mpSelf!=null&&CMARK[idx]!==mpSelf);row.className='zrow'+(mismatch?' mismatch':'');}
@@ -1588,7 +1589,7 @@ function zstep(slot,idx,delta){
 function step(idx,delta){
   var par=G.round.par||DPAR,pv=par[idx]||4,cur=CS[idx],next;
   if(cur==null)next=delta>0?pv:0;else next=cur+delta;if(next<0)next=0;if(next>15)next=15;CS[idx]=next;
-  var sv=document.getElementById('sv-'+idx);if(sv){if(next===0){sv.textContent='NR';sv.className='stval empty';}else{sv.textContent=next;sv.className='stval';}}
+  var sv=document.getElementById('sv-'+idx);if(sv){if(next===0){sv.textContent='NR';sv.className='stval empty nr';}else{sv.textContent=next;sv.className='stval';}}
   var p=G.players.find(function(p){return p.id===CID;});var hcp=Number(p&&p.handicap)||0,mode=G.round.mode||'stroke';
   var brEl=document.getElementById('br-'+idx),neEl=document.getElementById('ne-'+idx),row=document.getElementById('hr-'+idx);
   if(next===0){if(row)row.className='hrow filled';if(brEl)brEl.innerHTML='<div class="rv serif" style="color:#aaa">NR</div>';if(neEl)neEl.innerHTML=isStbl()?'<div class="stbl serif" style="color:#aaa">0</div>':'<div class="rv serif" style="color:#aaa">NR</div>';}
