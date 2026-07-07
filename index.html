@@ -1515,6 +1515,27 @@ function renderTeamView(){
 // ════ SCORECARD ════
 async function openCard(id){
   var p=G.players.find(function(p){return p.id===id;});if(!p)return;
+  // ── Stufe 4: Schutz der Mündel-Karte ──
+  // Ein Mündel darf nur der Admin oder der zugehörige Pate öffnen.
+  if(isWard(p)&&!IS_ADMIN_VIEW){
+    var guardian=findByPid(p.guardedBy);  // der Pate dieses Mündels
+    var devId2=DEVICE_ID||getDeviceId();
+    var allowed=false;
+    if(guardian&&DB){
+      try{
+        var gsnap=await DB.ref('device_player/'+devId2).get();
+        var myPid=gsnap.exists()?gsnap.val():null;  // welchem Spieler gehört dieses Gerät
+        // Erlaubt, wenn dieses Gerät zum Paten gehört
+        if(myPid&&myPid===guardian.id)allowed=true;
+        // Kulanz: wenn dieses Gerät noch keinem Spieler zugeordnet ist, erlauben (erstes Öffnen durch den Paten)
+        if(!myPid)allowed=true;
+      }catch(e){allowed=true;} // im Zweifel nicht blockieren (Fehler beim Lesen)
+    }else{allowed=true;} // kein Firebase/kein Pate bekannt → nicht blockieren
+    if(!allowed){
+      await askConfirm('🔒 '+esc(p.name)+' ist ein handyloser Spieler und wird von '+esc(guardian?guardian.name:'einem Paten')+' betreut.\n\nNur der Pate oder die Turnierleitung kann diese Karte öffnen.','Verstanden','#8e44ad');
+      return;
+    }
+  }
   // Scorecard-Warnung prüfen
   var warnMode=SCORECARD_WARN;
   var exceptMatch=SCORECARD_WARN_EXCEPT&&CODE&&SCORECARD_WARN_EXCEPT===CODE;
