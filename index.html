@@ -16,12 +16,12 @@
 <style>
 :root{--bg:#daeeff;--bg2:#c8e6fa;--bg3:#b8d8f5;--card:#fff;--border:#2c2c2c;--border-light:#8bb8d8;--txt:#111;--txt2:#334455;--txt3:#556677;--accent:#1565c0;--accent2:#0d47a1;--green:#2e7d32;--red:#e53935;--t1:#1565c0;--t2:#c62828;}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{height:100%;background:var(--bg)}
-body{min-height:100%;background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;-webkit-tap-highlight-color:transparent}
+html{height:100%;background:var(--bg);overflow-x:hidden}
+body{min-height:100%;background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;-webkit-tap-highlight-color:transparent;overflow-x:hidden;width:100%;max-width:100%}
 input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 input,select,button{font-family:'DM Sans',sans-serif}
 .serif{font-family:'Cormorant Garamond',serif}
-.view{display:none;flex-direction:column;min-height:100vh}
+.view{display:none;flex-direction:column;min-height:100vh;overflow-x:hidden}
 .view.active{display:flex}
 .toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(21,101,192,.96);color:#fff;padding:16px 28px;border-radius:16px;font-size:17px;font-weight:700;z-index:9999;opacity:0;transition:opacity .25s;pointer-events:none;box-shadow:0 8px 32px rgba(0,0,0,.25);text-align:center;max-width:90vw}
 .toast.show{opacity:1}
