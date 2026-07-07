@@ -1613,7 +1613,7 @@ async function pateAssign(wardId){
     var me=G.players.find(function(p){return p.id===CID;});
     if(CODE)try{await fbSet(fp('players/'+me.id),me);await fbSet(fp('players/'+wardId),w);}catch(e){}
     toast('🤝 Du betreust jetzt '+(w?w.name:'den Spieler'),'#8e44ad');
-    renderPateBar();renderHoles();
+    doOpenCard(CID);   // lädt WARD-Daten + rendert Karte + Banner
   }
 }
 async function pateClear(){
@@ -1625,7 +1625,8 @@ async function pateClear(){
   if(unassignWard(G.players,CID)){
     if(CODE)try{await fbSet(fp('players/'+me.id),me);if(w)await fbSet(fp('players/'+w.id),w);}catch(e){}
     toast('Patenschaft aufgehoben');
-    renderPateBar();renderHoles();
+    WARD_ID=null;
+    doOpenCard(CID);   // WARD-Daten zurücksetzen + normale Ansicht + Banner
   }
 }
 function setTab(t){CTAB=t;if(CID)localStorage.setItem(LS_TAB+CID,t);document.getElementById('tab-front').classList.toggle('active',t==='front');document.getElementById('tab-back').classList.toggle('active',t==='back');rerenderHoles();}
