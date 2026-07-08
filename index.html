@@ -173,16 +173,15 @@ input,select,button{font-family:'DM Sans',sans-serif}
 #sc-holes.big{--big-scale:1.5}
 #sc-holes.big .hrow{grid-template-columns:1fr;justify-items:center;gap:calc(6px * var(--big-scale));padding:calc(10px * var(--big-scale)) 14px}
 #sc-holes.big .hinfo{display:none}
-#sc-holes.big .stepper{width:min(88%,calc(240px * var(--big-scale)));max-width:100%}
 #sc-holes.big .hres{display:inline-block;margin:0 10px}
 #sc-holes.big .sc-col-head{grid-template-columns:calc(44px * var(--big-scale)) 1fr clamp(60px,18vw,68px) clamp(52px,16vw,60px)}
 #sc-holes.big .hrow-title{padding:calc(9px * var(--big-scale)) 14px 5px}
 #sc-holes.big .hrow-title .lochbadge{min-width:calc(34px * var(--big-scale));height:calc(34px * var(--big-scale));font-size:calc(18px * var(--big-scale));border-radius:10px}
 #sc-holes.big .hrow-title .lochttl{font-size:calc(16px * var(--big-scale))}
 #sc-holes.big .hrow-title .lochpar{font-size:calc(12px * var(--big-scale))}
-#sc-holes.big .stepper{height:calc(64px * var(--big-scale))}
-#sc-holes.big .stbtn{font-size:calc(37px * var(--big-scale));width:calc(64px * var(--big-scale));height:calc(64px * var(--big-scale))}
-#sc-holes.big .stval{font-size:calc(33px * var(--big-scale))}
+#sc-holes.big .stepper{height:calc(64px * var(--big-scale));width:min(86vw,calc(230px * var(--big-scale)));box-sizing:border-box}
+#sc-holes.big .stval{font-size:calc(33px * var(--big-scale));flex:1;min-width:0;overflow:hidden}
+#sc-holes.big .stbtn{font-size:calc(37px * var(--big-scale));width:calc(64px * var(--big-scale));height:calc(64px * var(--big-scale));flex-shrink:0}
 #sc-holes.big .hnum{font-size:calc(15px * var(--big-scale))}
 #sc-holes.big .hpar{font-size:calc(11px * var(--big-scale))}
 #sc-holes.big .hres{font-size:calc(13px * var(--big-scale));font-weight:800}
