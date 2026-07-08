@@ -171,7 +171,10 @@ input,select,button{font-family:'DM Sans',sans-serif}
 /* 👓 Brillen-Modus: alles proportional größer, Layout identisch (nur Einzel-Score-Eingabe) */
 /* Skalierung über CSS-Variable steuerbar (Dev-Seite): --big-scale */
 #sc-holes.big{--big-scale:1.5}
-#sc-holes.big .hrow{grid-template-columns:calc(44px * var(--big-scale)) 1fr clamp(60px,18vw,68px) clamp(52px,16vw,60px)}
+#sc-holes.big .hrow{grid-template-columns:1fr;justify-items:center;gap:calc(6px * var(--big-scale));padding:calc(10px * var(--big-scale)) 14px}
+#sc-holes.big .hinfo{display:none}
+#sc-holes.big .stepper{width:min(88%,calc(240px * var(--big-scale)));max-width:100%}
+#sc-holes.big .hres{display:inline-block;margin:0 10px}
 #sc-holes.big .sc-col-head{grid-template-columns:calc(44px * var(--big-scale)) 1fr clamp(60px,18vw,68px) clamp(52px,16vw,60px)}
 #sc-holes.big .hrow-title{padding:calc(9px * var(--big-scale)) 14px 5px}
 #sc-holes.big .hrow-title .lochbadge{min-width:calc(34px * var(--big-scale));height:calc(34px * var(--big-scale));font-size:calc(18px * var(--big-scale));border-radius:10px}
