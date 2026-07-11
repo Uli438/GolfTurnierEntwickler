@@ -1822,7 +1822,7 @@ function doOpenCard(id){
     CMARK=(p.markedScores&&Array.isArray(p.markedScores))?p.markedScores.slice():Array(18).fill(null);while(CMARK.length<18)CMARK.push(null);
   }else{MARK_ID=null;CMARK=Array(18).fill(null);}
   // Patenschaft: Mündel-Daten laden (nur normaler Modus)
-  if(!opts.zaehler&&p.guardOf){
+  if(false&&!opts.zaehler&&p.guardOf){ // FIX: Patenschaft deaktiviert - Zwei-Spalten-Ansicht nie oeffnen
     var ward=findByPid(p.guardOf);
     if(ward){
       WARD_ID=ward.id;
@@ -1846,6 +1846,7 @@ function doOpenCard(id){
 }
 function renderPateBar(){
   var bar=document.getElementById('pate-bar');if(!bar)return;
+  bar.style.display='none';return; // FIX: Patenschaft fuer dieses Turnier deaktiviert (Fund 6/7)
   var opts=G.round.options||{};
   // Nur im normalen Modus (nicht Zähler), nur Pro
   if(opts.zaehler||!PRO_ON){bar.style.display='none';return;}
@@ -2603,7 +2604,7 @@ async function saveSetup(){
   try{await initFB();
     // FIX Fund 1: NICHT mehr pauschal alle Spieler loeschen - nur die, die im Setup entfernt wurden.
     var keepIds={};G.players.forEach(function(p){keepIds[p.id]=true;});
-    try{var existSnap=await DB.ref(fp('players')).get();if(existSnap&&existSnap.exists()){var exP=existSnap.val();Object.keys(exP).forEach(function(oldId){if(!keepIds[oldId])fbSet(fp('players/'+oldId),null);});}}catch(eDel){}
+    try{var existSnap=await DB.ref(fp('players')).once('value');if(existSnap&&existSnap.exists()){var exP=existSnap.val();Object.keys(exP).forEach(function(oldId){if(!keepIds[oldId])fbSet(fp('players/'+oldId),null);});}}catch(eDel){}
     await fbSet(fp('round'),G.round);await Promise.all(G.players.map(function(p){return fbSet(fp('players/'+p.id),p);}));await fbSet(fp('tournament'),G.tournament||null);await fbSet(fp('notif'),NOTIF_ON);try{await DB.ref('turniere/'+CODE+'/meta/lastSeen').set(new Date().toISOString());}catch(e){}await ensureSetupAccess(CODE);registerAllPlayers(G.players,CODE);toast('✓ Turnier '+CODE+' gestartet');startListeners();trackPresence(CODE);}catch(e){toast('⚠️ Firebase nicht erreichbar');}
   LIVE_ROUND=G.round;LIVE_PLAYERS=G.players.slice();VIEW_RND=null;renderLB();refreshTrnUI();showView('lb');
 }
@@ -2723,7 +2724,7 @@ function calcTotal(){
   });
 }
 function totSumBox(label,val){return '<div style="flex:1;text-align:center;border:2px solid var(--border-light);border-radius:10px;padding:8px 4px"><div style="font-size:9px;color:var(--txt3);letter-spacing:1px">'+label+'</div><div style="font-size:19px;font-weight:900;font-family:\'Cormorant Garamond\',serif">'+val+'</div></div>';}
-function totHoleGrid(sc,par){
+function totHoleGrid(sc,par,mode,si,hcp){
   var out='';
   [[0,9],[9,18]].forEach(function(rg){
     out+='<div style="display:grid;grid-template-columns:repeat(9,1fr);gap:2px;margin-top:6px">';
@@ -2731,7 +2732,16 @@ function totHoleGrid(sc,par){
     out+='</div><div style="display:grid;grid-template-columns:repeat(9,1fr);gap:2px;margin-top:1px">';
     for(var j=rg[0];j<rg[1];j++){
       var v=sc[j],pv=(par||DPAR)[j]||4;
-      var txt=(v==null)?'–':(v===0?'NR':v);
+      // FIX Fund 12: Im NDB-Modus zaehlt NR als Netto-Doppelbogey - Anzeige zeigt den Wertungs-Wert (Formel identisch zu calcTotal)
+      var txt;
+      if(v==null){txt='–';}
+      else if(v===0&&mode==='zaehlen_ndb'){
+        var siV=(si&&si[j])||j+1,h=Math.round(Math.abs(hcp||0))*((hcp||0)<0?-1:1);
+        var exN=h>=0?Math.floor(h/18)+(h%18>=siV?1:0):-(Math.floor(Math.abs(h)/18)+(Math.abs(h)%18>=siV?1:0));
+        txt=String(pv+exN+2);
+      }
+      else if(v===0){txt='NR';}
+      else{txt=v;}
       var col=(v==null||v===0)?'var(--txt3)':dc(v-pv);
       out+='<div style="text-align:center;font-size:14px;font-weight:800;color:'+col+'">'+txt+'</div>';
     }
@@ -2769,7 +2779,8 @@ function showTotalDetail(pid){
     if(ro.ballverlust)xs.push('<span style="color:var(--red)">🔴 '+(d.bv||0)+'</span>');
     if(ro.ladies)xs.push('<span style="color:#6a1b9a">🚺 '+(d.la||0)+'</span>');
     if(xs.length)html+='<div style="display:flex;gap:12px;margin-top:4px;font-size:11px;font-weight:700">'+xs.join('')+'</div>';
-    html+=totHoleGrid(sc,rnd.par)+'</div>';
+    var hcpR=Number((rnd.handicaps&&rnd.handicaps[p.id]!=null)?rnd.handicaps[p.id]:p.handicap)||0;
+    html+=totHoleGrid(sc,rnd.par,rnd.mode||'stroke',Array.isArray(rnd.si)?rnd.si:DSI,hcpR)+'</div>';
   });
   document.getElementById('totdet-body').innerHTML=html;
   document.getElementById('totdet-modal').style.display='flex';
