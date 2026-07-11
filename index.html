@@ -2576,12 +2576,13 @@ async function saveSetup(){
   SP=SP.map(function(sp){
     var live=liveNow.find(function(x){return x.id===sp.id;});
     if(!live)return sp;
-    return Object.assign({},sp,{
-      scores:live.scores!=null?live.scores:sp.scores,
-      extras:live.extras!=null?live.extras:sp.extras,
-      markedScores:live.markedScores!=null?live.markedScores:sp.markedScores,
-      marks:live.marks!=null?live.marks:sp.marks
-    });
+    var m=Object.assign({},sp);
+    // Nur vorhandene Felder uebernehmen - NIE ein Feld mit undefined anlegen (Firebase lehnt das ab)
+    if(live.scores!=null)m.scores=live.scores;
+    if(live.extras!=null)m.extras=live.extras;
+    if(live.markedScores!=null)m.markedScores=live.markedScores;
+    if(live.marks!=null)m.marks=live.marks;
+    return m;
   });
   G.players=SP;renderScoreLog();var trnR=parseInt(document.getElementById('trn-rounds').value)||0;
   // SCHUTZ vor Datenverlust: eingefrorene Runden dürfen nicht durch Umschalten gelöscht werden
