@@ -535,7 +535,7 @@ input,select,button{font-family:'DM Sans',sans-serif}
 <div id="view-total" class="view">
   <div id="total-top-spacer" style="height:0;transition:height .3s;flex-shrink:0"></div>
   <div class="hdr" id="total-hdr"><button class="back-btn" id="total-back">←</button><div class="hdr-title serif">🏆 Gesamtauswertung</div></div>
-  <div class="total-body"><div id="total-content"></div><div id="total-lochanalyse" style="display:none"></div><div class="share-btns" style="margin-top:8px"><button class="share-btn p" id="btn-share-trn">📤 Teilen</button><button class="share-btn s" id="btn-copy-trn">📋 Kopieren</button></div><div class="share-btns" style="margin-top:8px"><button class="share-btn s" id="btn-excel-trn">📊 Excel-Export</button><button class="share-btn s" id="btn-lochanalyse">⛳ Loch-Analyse</button></div></div>
+  <div class="total-body"><div id="total-content"></div><div id="total-lochanalyse" style="display:none"></div><div class="share-btns" style="margin-top:8px"><button class="share-btn p" id="btn-share-trn">📤 Teilen</button><button class="share-btn s" id="btn-copy-trn">📋 Kopieren</button></div><div class="share-btns" style="margin-top:8px"><button class="share-btn s" id="btn-excel-trn">📊 Excel-Export</button><button class="share-btn s" id="btn-lochanalyse">⛳ Loch-Analyse</button><button class="share-btn s" id="btn-scorematrix">🗂 Score-Matrix</button></div><div id="total-scorematrix" style="display:none"></div></div>
 </div>
 
 <!-- SETUP -->
@@ -1062,6 +1062,7 @@ document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('btn-share-result').addEventListener('click',shareResult);
   document.getElementById('btn-copy-result').addEventListener('click',function(){copyText(buildShareText());});
   document.getElementById('btn-excel-trn').addEventListener('click',function(){var t=buildExcelExport();if(!t){toast('⚠️ Keine Rundendaten');return;}copyText(t);toast('📊 Kopiert – in Excel einfügen');});
+  document.getElementById('btn-scorematrix').addEventListener('click',function(){var el=document.getElementById('total-scorematrix');if(el.style.display==='none'){el.innerHTML=buildScoreMatrix();el.style.display='block';this.textContent='🗂 Matrix ausblenden';}else{el.style.display='none';el.innerHTML='';this.textContent='🗂 Score-Matrix';}});
   document.getElementById('btn-lochanalyse').addEventListener('click',function(){var el=document.getElementById('total-lochanalyse');if(el.style.display==='none'){el.innerHTML=buildLochAnalyse();el.style.display='block';this.textContent='⛳ Analyse ausblenden';}else{el.style.display='none';el.innerHTML='';this.textContent='⛳ Loch-Analyse';}});
   document.getElementById('btn-share-trn').addEventListener('click',shareTrn);
   document.getElementById('btn-copy-trn').addEventListener('click',function(){copyText(buildTrnText());});
@@ -2838,6 +2839,52 @@ function buildLochAnalyse(){
       html+='<tr style="border-top:1px solid var(--border-light)"><td style="padding:3px 0;font-weight:700">'+s.h+mark+'</td><td>'+s.par+'</td><td style="color:var(--txt3)">'+s.si+'</td><td>'+(s.avg!=null?xNum(s.avg.toFixed(1)):'\u2013')+'</td><td style="font-weight:700;color:'+(s.diff>0.99?'var(--red)':s.diff!=null&&s.diff<0?'var(--green)':'var(--txt2)')+'">'+(s.diff!=null?(s.diff>=0?'+':'')+xNum(s.diff.toFixed(1)):'\u2013')+'</td><td>'+bar+'</td><td style="color:var(--txt3)">'+(s.nr||'')+'</td></tr>';
     });
     html+='</table><div style="font-size:9px;color:var(--txt3);margin-top:6px">\u00d8 ohne NR \u00b7 Balken: <span style="color:'+CB.e+'">\u25a0</span> Eagle- <span style="color:'+CB.b+'">\u25a0</span> Birdie <span style="color:'+CB.p+'">\u25a0</span> Par <span style="color:'+CB.bo+'">\u25a0</span> Bogey <span style="color:'+CB.d+'">\u25a0</span> Doppel+</div></div>';
+  });
+  return html;
+}
+function buildScoreMatrix(){
+  var rounds=xRounds();if(!rounds.length)return'<div style="padding:14px;color:var(--txt3);font-size:13px">Noch keine Rundendaten.</div>';
+  var lp=(LIVE_PLAYERS||G.players);
+  var html='';
+  rounds.forEach(function(r){
+    var players=lp.filter(function(p){var sc=r.scores[p.id]||[];return sc.some(function(s){return s!=null;});});
+    if(!players.length)return;
+    html+='<div style="background:#fff;border:2px solid var(--border-light);border-radius:12px;padding:12px 0 10px;margin-bottom:12px">';
+    html+='<div class="serif" style="font-size:15px;font-weight:700;margin:0 12px 8px">R'+r.num+' \u00b7 '+esc(r.name)+'</div>';
+    html+='<div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><table style="border-collapse:separate;border-spacing:0;font-size:12px;min-width:100%">';
+    // Kopfzeile
+    html+='<tr><th style="position:sticky;left:0;background:#fff;z-index:2;text-align:left;padding:4px 6px;font-size:9px;color:var(--txt3);letter-spacing:.5px">LOCH</th><th style="position:sticky;left:44px;background:#fff;z-index:2;padding:4px 6px;font-size:9px;color:var(--txt3)">PAR</th>';
+    players.forEach(function(p){html+='<th style="padding:4px 5px;font-size:9.5px;max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--txt2)">'+esc(p.name)+'</th>';});
+    html+='</tr>';
+    // Lochzeilen
+    for(var i=0;i<18;i++){
+      var pv=r.par[i]||4;
+      html+='<tr><td style="position:sticky;left:0;background:#fff;z-index:1;font-weight:700;padding:3px 6px;border-top:1px solid var(--border-light)">'+(i+1)+'</td><td style="position:sticky;left:44px;background:#fff;z-index:1;color:var(--txt3);padding:3px 6px;border-top:1px solid var(--border-light)">'+pv+'</td>';
+      players.forEach(function(p){
+        var s=(r.scores[p.id]||[])[i],cell;
+        if(s==null)cell='<span style="color:var(--txt3)">\u2013</span>';
+        else if(s===0)cell='<span style="display:inline-block;min-width:22px;padding:2px 3px;border-radius:5px;background:#e7ecef;color:var(--txt3);font-size:10px;font-weight:700">NR</span>';
+        else{
+          var d=s-pv,st='';
+          if(d<=-2)st='background:#f6c344;color:#5a4500;border-radius:50%';
+          else if(d===-1)st='background:#5cb85c;color:#fff;border-radius:50%';
+          else if(d===1)st='background:#f0883e;color:#fff;border-radius:5px';
+          else if(d>=2)st='background:#e05252;color:#fff;border-radius:5px';
+          cell=st?'<span style="display:inline-block;min-width:22px;line-height:22px;font-weight:700;'+st+'">'+s+'</span>':'<span style="font-weight:600">'+s+'</span>';
+        }
+        html+='<td style="text-align:center;padding:3px 5px;border-top:1px solid var(--border-light)">'+cell+'</td>';
+      });
+      html+='</tr>';
+    }
+    // Brutto-Summenzeile
+    html+='<tr><td colspan="2" style="position:sticky;left:0;background:var(--bg2);z-index:1;font-size:9.5px;font-weight:700;letter-spacing:.5px;padding:5px 6px;border-top:2px solid var(--border)">BRUTTO</td>';
+    players.forEach(function(p){
+      var sc=r.scores[p.id]||[];
+      var res=xCalcRow(toArr18(sc),r.hcps[p.id],r.par,r.si,r.mode,r.maxScore);
+      html+='<td style="text-align:center;font-weight:700;padding:5px;background:var(--bg2);border-top:2px solid var(--border)">'+(res.b>0?'+':'')+(res.b===0?'Par':res.b)+'</td>';
+    });
+    html+='</tr></table></div>';
+    html+='<div style="font-size:9px;color:var(--txt3);margin:6px 12px 0">\ud83d\udfe1 Eagle- \ud83d\udfe2 Birdie \u00b7 wei\u00df Par \ud83d\udfe0 Bogey \ud83d\udd34 Doppel+ \u00b7 seitlich wischen f\u00fcr mehr Spieler</div></div>';
   });
   return html;
 }
