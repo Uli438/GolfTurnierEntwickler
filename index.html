@@ -2827,10 +2827,10 @@ function buildLochAnalyse(){
     var easiest=played.length?played.reduce(function(a,s){return s.diff<a.diff?s:a;}):null;
     html+='<div style="background:#fff;border:2px solid var(--border-light);border-radius:12px;padding:12px;margin-bottom:12px">';
     html+='<div class="serif" style="font-size:15px;font-weight:700;margin-bottom:2px">R'+r.num+' \u00b7 '+esc(r.name)+'</div>';
-    if(hardest)html+='<div style="font-size:11px;color:var(--txt2);margin-bottom:8px">\U0001f534 Schwerstes: L'+hardest.h+' (\u00d8 '+xNum(hardest.avg.toFixed(1))+' bei Par '+hardest.par+') \u00b7 \U0001f7e2 Leichtestes: L'+easiest.h+' (\u00d8 '+xNum(easiest.avg.toFixed(1))+' bei Par '+easiest.par+')</div>';
+    if(hardest)html+='<div style="font-size:11px;color:var(--txt2);margin-bottom:8px">\ud83d\udd34 Schwerstes: L'+hardest.h+' (\u00d8 '+xNum(hardest.avg.toFixed(1))+' bei Par '+hardest.par+') \u00b7 \ud83d\udfe2 Leichtestes: L'+easiest.h+' (\u00d8 '+xNum(easiest.avg.toFixed(1))+' bei Par '+easiest.par+')</div>';
     html+='<table style="width:100%;border-collapse:collapse;font-size:11.5px"><tr style="color:var(--txt3);font-size:9px;letter-spacing:.5px"><td>LOCH</td><td>PAR</td><td>SI</td><td>\u00d8</td><td>\u00b1</td><td style="width:38%">VERTEILUNG</td><td>NR</td></tr>';
     stats.forEach(function(s){
-      var mark=hardest&&s.h===hardest.h?' \U0001f534':(easiest&&s.h===easiest.h?' \U0001f7e2':'');
+      var mark=hardest&&s.h===hardest.h?' \ud83d\udd34':(easiest&&s.h===easiest.h?' \ud83d\udfe2':'');
       var bar='';var tot=s.e+s.b+s.pa+s.bo+s.dd;
       if(tot>0){bar='<div style="display:flex;height:10px;border-radius:5px;overflow:hidden">';
         [['e',CB.e],['b',CB.b],['pa',CB.p],['bo',CB.bo],['dd',CB.d]].forEach(function(k){if(s[k[0]]>0)bar+='<div style="flex:'+s[k[0]]+';background:'+k[1]+'"></div>';});
