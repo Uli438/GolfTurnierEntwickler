@@ -1190,7 +1190,7 @@ function startListeners(){
   var r4=DB.ref(fp('notif')).on('value',function(snap){NOTIF_ON=!!snap.val();});
   DB.ref('turniere/'+CODE+'/logo').on('value',function(snap){G_LOGO=(snap&&snap.exists())?snap.val():null;applyTournamentLogo();});
   var r1=DB.ref(fp('round')).on('value',function(snap){if(!snap.exists())return;LIVE_ROUND=snap.val();if(LIVE_ROUND.options&&LIVE_ROUND.options.notif!==undefined)NOTIF_ON=!!LIVE_ROUND.options.notif;if(VIEW_RND===null){G.round=LIVE_ROUND;renderLB();renderResult();}});
-  var r2=DB.ref(fp('players')).on('value',function(snap){if(!snap.exists())return;var fresh=parsePlayers(snap.val());LIVE_PLAYERS=fresh;if(firstPlayers){fresh.forEach(saveSnap);firstPlayers=false;}else{fresh.forEach(function(np){checkEvents(PREV_SNAP[np.id]||null,np);saveSnap(np);});}if(VIEW_RND===null){G.players=fresh;renderLB();renderResult();if(scoreLogEnabled())renderScoreLog();if(document.getElementById('view-card').classList.contains('active')&&CID){var p2=G.players.find(function(p){return p.id===CID;});if(p2&&!aTimer){CS=p2.scores?p2.scores.slice():Array(18).fill(null);var zo=G.round.options||{};if(zo.zaehler&&MARK_ID)renderHolesZaehler();else if(!zo.zaehler&&WARD_ID){var wp=G.players.find(function(x){return x.id===WARD_ID;});if(wp){WARD_CS=wp.scores?wp.scores.slice():Array(18).fill(null);WARD_EXT=extToCext(wp.extras);}renderHolesPate();}else renderHoles();updatePills();}}}});
+  var r2=DB.ref(fp('players')).on('value',function(snap){if(!snap.exists())return;var fresh=parsePlayers(snap.val());LIVE_PLAYERS=fresh;if(firstPlayers){fresh.forEach(saveSnap);firstPlayers=false;}else{fresh.forEach(function(np){checkEvents(PREV_SNAP[np.id]||null,np);saveSnap(np);});}if(VIEW_RND===null){G.players=fresh;renderLB();renderResult();if(scoreLogEnabled())renderScoreLog();if(document.getElementById('view-card').classList.contains('active')&&CID){var p2=G.players.find(function(p){return p.id===CID;});if(p2&&!aTimer&&!pateTimer){CS=p2.scores?p2.scores.slice():Array(18).fill(null);var zo=G.round.options||{};if(zo.zaehler&&MARK_ID)renderHolesZaehler();else if(!zo.zaehler&&WARD_ID){var wp=G.players.find(function(x){return x.id===WARD_ID;});if(wp){WARD_CS=wp.scores?wp.scores.slice():Array(18).fill(null);WARD_EXT=extToCext(wp.extras);}renderHolesPate();}else renderHoles();updatePills();}}}});
   var r3=DB.ref(fp('tournament')).on('value',function(snap){if(!snap.exists())return;G.tournament=snap.val();refreshTrnUI();if(document.getElementById('view-total').classList.contains('active'))renderTotal();});
   OFF=[function(){DB.ref(fp('notif')).off('value',r4);},function(){DB.ref(fp('round')).off('value',r1);},function(){DB.ref(fp('players')).off('value',r2);},function(){DB.ref(fp('tournament')).off('value',r3);}];
 }
@@ -1622,7 +1622,7 @@ function loadLoc(id){try{var r=localStorage.getItem(LS_LOC+id);return r?JSON.par
 function clearLoc(id){try{localStorage.removeItem(LS_LOC+id);}catch(e){}}
 function trigAS(){saveLoc(CID,CS);clearTimeout(aTimer);aTimer=setTimeout(pushFB,2000);}
 async function pushFB(){if(!CID||!CODE)return;aTimer=null;if(VIEW_RND!==null)return;if(!navigator.onLine){syncDot('off');pSync=true;return;}syncDot('save');try{var extra={scores:CS.slice(),extras:CEXT.slice()};var opts=G.round.options||{};if(opts.zaehler&&MARK_ID){extra.markedScores=CMARK.slice();extra.marks=MARK_ID;}var updated=Object.assign({},G.players.find(function(p){return p.id===CID;}),extra);G.players=G.players.map(function(p){return p.id===CID?updated:p;});saveSnap(updated);await fbSet(fp('players/'+CID),updated);if(updated.pid)registerPlayer(updated.pid,updated.name,updated.handicap,CODE);clearLoc(CID);pSync=false;syncDot('on');if(scoreLogEnabled())renderScoreLog();}catch(e){syncDot('off');pSync=true;}}
-window.addEventListener('online',async function(){syncDot('on');if(pSync)await pushFB();});
+window.addEventListener('online',async function(){syncDot('on');if(pSync)await pushFB();if(pateLoadPending()&&WARD_ID)await pateSave();});
 window.addEventListener('offline',function(){syncDot('off');});
 
 
@@ -1842,12 +1842,19 @@ function doOpenCard(id){
     CMARK=(p.markedScores&&Array.isArray(p.markedScores))?p.markedScores.slice():Array(18).fill(null);while(CMARK.length<18)CMARK.push(null);
   }else{MARK_ID=null;CMARK=Array(18).fill(null);}
   // Patenschaft: Mündel-Daten laden (nur normaler Modus)
-  if(false&&!opts.zaehler&&p.guardOf){ // FIX: Patenschaft deaktiviert - Zwei-Spalten-Ansicht nie oeffnen
+  if(!opts.zaehler&&p.guardOf){
     var ward=findByPid(p.guardOf);
     if(ward){
       WARD_ID=ward.id;
       WARD_CS=ward.scores?ward.scores.slice():Array(18).fill(null);while(WARD_CS.length<18)WARD_CS.push(null);
       WARD_EXT=extToCext(ward.extras);
+      // FIX Fund 7: ungespeicherte Paten-Eingaben (z.B. nach Safari-Neuladen im Funkloch) wiederherstellen
+      var pp=pateLoadPending();
+      if(pp&&pp.code===CODE&&pp.wardId===ward.id&&Array.isArray(pp.wcs)){
+        var locFuller=pp.wcs.filter(function(s){return s!=null;}).length>=WARD_CS.filter(function(s){return s!=null;}).length;
+        if(locFuller){WARD_CS=toArr18(pp.wcs);if(Array.isArray(pp.wext))WARD_EXT=pp.wext;pateSaveSoon();}
+        else pateClearPending();
+      }
     }else{WARD_ID=null;WARD_CS=Array(18).fill(null);WARD_EXT=Array(18).fill(null).map(function(){return blankExt();});}
   }else{WARD_ID=null;WARD_CS=Array(18).fill(null);WARD_EXT=Array(18).fill(null).map(function(){return blankExt();});}
   Z_SLOT='self';
@@ -1866,7 +1873,6 @@ function doOpenCard(id){
 }
 function renderPateBar(){
   var bar=document.getElementById('pate-bar');if(!bar)return;
-  bar.style.display='none';return; // FIX: Patenschaft fuer dieses Turnier deaktiviert (Fund 6/7)
   var opts=G.round.options||{};
   // Nur im normalen Modus (nicht Zähler), nur Pro
   if(opts.zaehler||!PRO_ON){bar.style.display='none';return;}
@@ -2214,24 +2220,31 @@ function pateStep(slot,idx,delta){
   pateSaveSoon();
   renderHolesPate();
 }
+var LS_PATE='bp_pate_pending';
+function pateStorePending(){try{if(!WARD_ID||!CODE)return;localStorage.setItem(LS_PATE,JSON.stringify({code:CODE,wardId:WARD_ID,wcs:WARD_CS,wext:WARD_EXT,mid:CID,mcs:CS,mext:CEXT,ts:Date.now()}));}catch(e){}}
+function pateLoadPending(){try{var r=localStorage.getItem(LS_PATE);return r?JSON.parse(r):null;}catch(e){return null;}}
+function pateClearPending(){try{localStorage.removeItem(LS_PATE);}catch(e){}}
 var pateTimer=null;
-function pateSaveSoon(){if(pateTimer)clearTimeout(pateTimer);pateTimer=setTimeout(pateSave,600);}
+function pateSaveSoon(){pateStorePending();if(pateTimer)clearTimeout(pateTimer);pateTimer=setTimeout(pateSave,600);}
 async function pateSave(){
   pateTimer=null;if(!CID||!CODE)return;if(VIEW_RND!==null)return;
+  // FIX Fund 6: BEIDE Karten VOR jedem await zusammenbauen - kein Zeitfenster fuer eingehende Snapshots
+  var meUpd=Object.assign({},G.players.find(function(p){return p.id===CID;}),{scores:CS.slice(),extras:CEXT.slice()});
+  var wardUpd=null;
+  if(WARD_ID)wardUpd=Object.assign({},G.players.find(function(p){return p.id===WARD_ID;}),{scores:WARD_CS.slice(),extras:WARD_EXT.slice()});
+  G.players=G.players.map(function(p){return p.id===CID?meUpd:(wardUpd&&p.id===WARD_ID?wardUpd:p);});
+  saveSnap(meUpd);if(wardUpd)saveSnap(wardUpd);
+  // FIX Fund 7: Offline-Zweig - lokal ist schon gespiegelt (pateStorePending), nur Status zeigen
+  if(!navigator.onLine){pateStorePending();syncDot('off');return;}
   syncDot('save');
   try{
-    // Eigene Karte
-    var meUpd=Object.assign({},G.players.find(function(p){return p.id===CID;}),{scores:CS.slice(),extras:CEXT.slice()});
-    G.players=G.players.map(function(p){return p.id===CID?meUpd:p;});
-    saveSnap(meUpd);await fbSet(fp('players/'+CID),meUpd);
-    // Mündel-Karte (echter Eintrag des Mündels!)
-    if(WARD_ID){
-      var wardUpd=Object.assign({},G.players.find(function(p){return p.id===WARD_ID;}),{scores:WARD_CS.slice(),extras:WARD_EXT.slice()});
-      G.players=G.players.map(function(p){return p.id===WARD_ID?wardUpd:p;});
-      saveSnap(wardUpd);await fbSet(fp('players/'+WARD_ID),wardUpd);
-    }
+    // Ein atomares Update fuer beide Karten; JSON-Reinigung entfernt undefined-Felder
+    var upd={};upd['players/'+CID]=JSON.parse(JSON.stringify(meUpd));
+    if(wardUpd)upd['players/'+WARD_ID]=JSON.parse(JSON.stringify(wardUpd));
+    await DB.ref(fp('')).update(upd);
+    pateClearPending();
     syncDot('on');if(scoreLogEnabled())renderScoreLog();
-  }catch(e){syncDot('off');}
+  }catch(e){pateStorePending();syncDot('off');}
 }
 function pateArrExt(slot){return slot==='self'?{cs:CS,ext:CEXT}:{cs:WARD_CS,ext:WARD_EXT};}
 function bindPateExtraHandlers(){
@@ -2696,7 +2709,28 @@ function goToRound(r){
 }
 async function closeRound(){
   var t=G.tournament;if(!t)return;var cur=t.currentRound||1;
-  var ok=await askConfirm('Runde '+cur+' von '+t.totalRounds+' abschließen und Scores einfrieren?','Einfrieren','#e65100');if(!ok)return;
+  // EINFRIER-SPERRE: Uebersicht aus dem Server-Stand; Teilspieler blockieren, Notausgang in 2 Stufen (Fund 10)
+  var lp0=LIVE_PLAYERS||G.players;
+  var counts=lp0.map(function(p){return{name:p.name,id:p.id,n:toArr18(p.scores).filter(function(s){return s!=null;}).length};});
+  var partial=counts.filter(function(c){return c.n>0&&c.n<18;});
+  var full=counts.filter(function(c){return c.n===18;});
+  var idle=counts.filter(function(c){return c.n===0;});
+  var presMap=null;
+  try{var pSnap=await DB.ref('presence/'+CODE).once('value');if(pSnap&&pSnap.exists())presMap=pSnap.val();}catch(ePres){}
+  function pDot(id){if(!presMap||!presMap[id])return'';return presMap[id].online?' \ud83d\udfe2':' \u26ab';}
+  var L=[];
+  partial.forEach(function(c){L.push('\u26a0\ufe0f '+c.name+'  '+c.n+'/18'+pDot(c.id));});
+  if(full.length)L.push('\u2705 18/18 ('+full.length+'): '+full.map(function(c){return c.name;}).join(', '));
+  if(idle.length)L.push('\u2013 nicht gestartet: '+idle.map(function(c){return c.name;}).join(', '));
+  var list=L.join('\n');
+  if(partial.length===0){
+    var ok=await askConfirm('Runde '+cur+' von '+t.totalRounds+' abschließen und Scores einfrieren?\n\n'+list,'Einfrieren','#e65100');if(!ok)return;
+  }else{
+    var ok1=await askConfirm('\u26a0\ufe0f '+partial.length+' Spieler haben noch offene L\u00f6cher:\n\n'+list+'\n\nOffene L\u00f6cher fehlen sp\u00e4ter im eingefrorenen Ergebnis. Erst pr\u00fcfen: Haben alle gespeichert? Ist jeder online (\ud83d\udfe2)?','Trotzdem fortfahren','#e65100');
+    if(!ok1)return;
+    var ok2=await askConfirm('Wirklich endg\u00fcltig einfrieren?\n\nRunde '+cur+' wird MIT den fehlenden L\u00f6chern eingefroren. Das betrifft: '+partial.map(function(c){return c.name;}).join(', ')+'.','Endg\u00fcltig einfrieren','var(--red)');
+    if(!ok2)return;
+  }
   var scores={},handicaps={},extras={};var livePlayers=LIVE_PLAYERS||G.players,liveRound=LIVE_ROUND||G.round;
   livePlayers.forEach(function(p){scores[p.id]=toArr18(p.scores);handicaps[p.id]=Number(p.handicap)||0;extras[p.id]=toArr18(p.extras);});
   var entry={roundNum:cur,date:liveRound.date||tod(),courseName:liveRound.courseName||'–',tee:liveRound.tee||'',par:(liveRound.par||DPAR).slice(),si:(liveRound.strokeIndex||DSI).slice(),mode:liveRound.mode||'stroke',maxScore:liveRound.maxScore||null,teamMode:liveRound.teamMode||'none',longestDrive:liveRound.longestDrive||0,options:liveRound.options||{},scores:scores,handicaps:handicaps,extras:extras};
