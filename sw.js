@@ -1,7 +1,7 @@
 // Birdino Service Worker
 // Strategie: network-first — der Server gewinnt IMMER, wenn erreichbar.
 // Der Cache springt nur ein, wenn kein Netz da ist (Funkloch-Start).
-var VERSION = '2026-07-19e';
+var VERSION = '2026-07-19f';
 var CACHE = 'birdino-' + VERSION;
 
 self.addEventListener('install', function (e) {
