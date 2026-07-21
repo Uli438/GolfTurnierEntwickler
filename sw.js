@@ -1,7 +1,11 @@
-// Birdino Service Worker
-// network-first fuer eigene Dateien; cache-first fuer die versionierten Firebase-SDK-Skripte.
-var VERSION = '2026-07-19g';
-var CACHE = 'birdino-' + VERSION;
+// Birdino Service Worker — identisch fuer Dev- und Pro-Version.
+// Cache-Name wird aus dem Installationspfad (scope) abgeleitet, damit sich
+// beide Apps auf derselben Domain nicht gegenseitig die Caches loeschen.
+var VERSION = '2026-07-19h';
+var SCOPE_KEY = (self.registration && self.registration.scope || self.location.href)
+  .replace(/^https?:\/\//, '').replace(/[^a-z0-9]+/gi, '-').replace(/-+$/,'');
+var CACHE = 'birdino-' + SCOPE_KEY + '-' + VERSION;
+var CACHE_PREFIX = 'birdino-' + SCOPE_KEY + '-';
 var SDK = [
   'https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js',
   'https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js'
@@ -21,8 +25,9 @@ self.addEventListener('install', function (e) {
 self.addEventListener('activate', function (e) {
   e.waitUntil(
     caches.keys().then(function (keys) {
+      // Nur die EIGENEN alten Caches (gleicher Scope) loeschen, fremde App unberuehrt
       return Promise.all(keys.filter(function (k) {
-        return k.indexOf('birdino-') === 0 && k !== CACHE;
+        return k.indexOf(CACHE_PREFIX) === 0 && k !== CACHE;
       }).map(function (k) { return caches.delete(k); }));
     }).then(function () { return self.clients.claim(); })
   );
