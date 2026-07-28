@@ -374,6 +374,31 @@ input,select,button{font-family:'DM Sans',sans-serif}
 .dev-sec{display:flex;align-items:center;gap:8px;margin:6px 2px -4px;font-size:10px;color:var(--accent);letter-spacing:2px;font-weight:700}
 .dev-sec::before{content:'';flex:0 0 18px;height:2px;background:var(--accent);border-radius:2px;opacity:.5}
 .dev-sec::after{content:'';flex:1;height:1px;background:var(--border-light)}
+
+/* ==== LIVE-TV-SCREEN ==== */
+#tv-screen{position:fixed;inset:0;z-index:9000;background:linear-gradient(160deg,#0a1416 0%,#0f2027 55%,#16323b 100%);color:#fff;display:none;flex-direction:column;overflow:hidden;font-family:inherit}
+#tv-screen.on{display:flex}
+#tv-back{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;gap:10px;padding:16px 20px;background:linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,0));transform:translateY(-100%);transition:transform .35s ease;z-index:10}
+#tv-back.show{transform:translateY(0)}
+#tv-back button{background:rgba(255,255,255,.15);border:none;color:#fff;font-size:18px;font-weight:700;padding:10px 18px;border-radius:12px;cursor:pointer;display:flex;align-items:center;gap:8px;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+#tv-stage{flex:1;display:flex;flex-direction:column;padding:clamp(20px,4vw,60px);opacity:1;transition:opacity .5s ease}
+#tv-stage.fade{opacity:0}
+.tv-eyebrow{display:flex;align-items:center;gap:12px;font-size:clamp(12px,1.6vw,20px);letter-spacing:3px;color:#5fd0e0;font-weight:700;text-transform:uppercase;margin-bottom:6px}
+.tv-live-dot{width:12px;height:12px;border-radius:50%;background:#3ee06a;box-shadow:0 0 12px #3ee06a;animation:tvpulse 1.6s infinite}
+@keyframes tvpulse{0%,100%{opacity:1}50%{opacity:.35}}
+.tv-title{font-size:clamp(28px,4.5vw,64px);font-weight:800;line-height:1.05;margin-bottom:4px}
+.tv-meta{font-size:clamp(13px,1.7vw,22px);color:#9fb8c2;margin-bottom:clamp(14px,2.5vw,34px)}
+.tv-lb{flex:1;display:flex;flex-direction:column;gap:clamp(6px,1vw,14px);justify-content:flex-start;overflow:hidden}
+.tv-row{display:grid;grid-template-columns:clamp(44px,5vw,80px) 1fr auto;align-items:center;gap:clamp(10px,2vw,28px);background:rgba(255,255,255,.055);border-radius:clamp(10px,1.4vw,18px);padding:clamp(10px,1.5vw,22px) clamp(14px,2.2vw,32px);transition:background .3s}
+.tv-row.lead{background:linear-gradient(90deg,rgba(95,208,224,.22),rgba(95,208,224,.05));box-shadow:inset 0 0 0 2px rgba(95,208,224,.4)}
+.tv-rank{font-size:clamp(26px,4vw,58px);font-weight:800;text-align:center;color:#5fd0e0}
+.tv-rank .medal{font-size:clamp(26px,4vw,54px)}
+.tv-name{font-size:clamp(22px,3.2vw,46px);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tv-namesub{font-size:clamp(12px,1.5vw,20px);color:#8fa8b2;font-weight:500;margin-top:2px}
+.tv-score{font-size:clamp(30px,4.4vw,64px);font-weight:800;text-align:right;font-variant-numeric:tabular-nums}
+.tv-dots{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:10}
+.tv-dots span{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.28)}
+.tv-dots span.on{background:#5fd0e0;width:22px;border-radius:5px;transition:all .3s}
 </style>
 </head>
 <body>
@@ -450,7 +475,7 @@ input,select,button{font-family:'DM Sans',sans-serif}
     <div class="lobby-logo" id="lobby-logo-pro" style="display:none"><svg viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="pl_g1gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6e27a"/><stop offset="0.45" stop-color="#d4af37"/><stop offset="0.7" stop-color="#b8860b"/><stop offset="1" stop-color="#f6e27a"/></linearGradient><filter id="pl_a_ds" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#0c2a18" flood-opacity="0.28"/></filter><filter id="pl_goldglow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#d4af37" flood-opacity="0.45"/></filter></defs><ellipse cx="300" cy="232" rx="232" ry="186" fill="none" stroke="url(#pl_g1gold)" stroke-width="9" filter="url(#pl_goldglow)"/><ellipse cx="300" cy="232" rx="214" ry="168" fill="none" stroke="url(#pl_g1gold)" stroke-width="2.5" opacity="0.8"/><defs><linearGradient id="pl_a_sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bfe6ff"/><stop offset="0.6" stop-color="#e3f4ff"/><stop offset="1" stop-color="#f4fbff"/></linearGradient><linearGradient id="pl_a_green" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fcf4f"/><stop offset="1" stop-color="#2f8a1d"/></linearGradient><linearGradient id="pl_a_ribG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8ad13a"/><stop offset="0.5" stop-color="#57b026"/><stop offset="1" stop-color="#2c7d14"/></linearGradient><linearGradient id="pl_a_ribB" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3eb0ec"/><stop offset="0.5" stop-color="#1d84cf"/><stop offset="1" stop-color="#0a5ba2"/></linearGradient><linearGradient id="pl_a_bird" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#33495a"/><stop offset="0.55" stop-color="#1c2c39"/><stop offset="1" stop-color="#0e1920"/></linearGradient><linearGradient id="pl_a_birdWing" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3f5a6e"/><stop offset="1" stop-color="#16242e"/></linearGradient><radialGradient id="pl_a_ball" cx="0.38" cy="0.34" r="0.75"><stop offset="0" stop-color="#fff"/><stop offset="0.7" stop-color="#eef2f4"/><stop offset="1" stop-color="#c7d0d6"/></radialGradient><clipPath id="pl_a_clip"><ellipse cx="300" cy="232" rx="196" ry="150"/></clipPath></defs><g filter="url(#pl_a_ds)"><path d="M300 36 C 470 36 560 130 560 232 C 560 300 520 352 470 380 C 520 330 532 268 510 214 C 478 132 398 86 300 86 C 250 86 206 100 170 124 C 210 70 250 36 300 36 Z" fill="url(#pl_a_ribB)"/><path d="M300 428 C 130 428 40 334 40 232 C 40 164 80 112 130 84 C 80 134 68 196 90 250 C 122 332 202 378 300 378 C 350 378 394 364 430 340 C 390 394 350 428 300 428 Z" fill="url(#pl_a_ribG)"/></g><g clip-path="url(#pl_a_clip)"><rect x="100" y="78" width="400" height="200" fill="url(#pl_a_sky)"/><path d="M104 250 C 200 210 330 214 496 246 L 496 390 L 104 390 Z" fill="url(#pl_a_green)"/><line x1="388" y1="196" x2="388" y2="286" stroke="#3a3a3a" stroke-width="4" stroke-linecap="round"/><path d="M388 198 L 430 210 L 388 224 Z" fill="#e8403a"/><circle cx="250" cy="300" r="26" fill="url(#pl_a_ball)"/><circle cx="243" cy="294" r="3" fill="#d3dade"/><circle cx="255" cy="300" r="3" fill="#d3dade"/><circle cx="248" cy="308" r="3" fill="#d3dade"/><g filter="url(#pl_a_ds)"><path d="M286 168 C 250 120 214 92 168 84 C 206 110 232 146 256 192 Z" fill="url(#pl_a_birdWing)"/><path d="M300 166 C 286 116 300 70 332 40 C 330 92 330 140 318 178 Z" fill="url(#pl_a_bird)"/><path d="M256 196 C 270 176 300 168 332 178 C 360 186 372 200 366 214 C 360 230 332 236 300 230 C 280 226 262 216 256 196 Z" fill="url(#pl_a_bird)"/><circle cx="360" cy="190" r="17" fill="url(#pl_a_bird)"/><path d="M375 186 L 396 191 L 375 199 Z" fill="#f3a51f"/><circle cx="365" cy="187" r="3" fill="#fff"/><circle cx="366" cy="187" r="1.5" fill="#0e1920"/><path d="M262 214 C 240 226 218 228 200 222 C 222 218 240 208 256 196 Z" fill="url(#pl_a_birdWing)"/></g></g><ellipse cx="300" cy="232" rx="196" ry="150" fill="none" stroke="#fff" stroke-width="6" opacity="0.85"/><g transform="translate(300,470)"><rect x="-132" y="-34" width="264" height="60" rx="30" fill="#0e1920" filter="url(#pl_a_ds)"/><rect x="-132" y="-34" width="264" height="60" rx="30" fill="none" stroke="url(#pl_g1gold)" stroke-width="2.5"/><rect x="-126" y="-28" width="252" height="48" rx="24" fill="none" stroke="url(#pl_g1gold)" stroke-width="0.8" opacity="0.5"/><text x="-20" y="9" text-anchor="middle" font-family="'Archivo',sans-serif" font-weight="800" font-size="40" letter-spacing="-1"><tspan fill="#ffffff">Bird</tspan><tspan fill="#8ad13a">ino</tspan></text><text x="92" y="8" text-anchor="middle" font-family="'Archivo',sans-serif" font-weight="900" font-size="28" fill="url(#pl_g1gold)" letter-spacing="1">PRO</text></g><g transform="translate(300,46)"><circle r="17" fill="#0e1920"/><circle r="17" fill="none" stroke="url(#pl_g1gold)" stroke-width="2.5"/><path d="M-8 3 L-5 -6 L0 0 L5 -6 L8 3 Z" fill="url(#pl_g1gold)"/></g></svg></div>
     <div class="lobby-title">Bird<span>ino</span></div>
     <div class="lobby-sub">Turniere organisieren · live mitspielen</div>
-    <div style="font-size:10px;color:#9aa7b2;margin-top:4px">Build 2026-07-27c</div>
+    <div style="font-size:10px;color:#9aa7b2;margin-top:4px">Build 2026-07-28a</div>
     <div style="font-size:10px;color:#9aa7b2;margin-top:2px" id="snap-diag"></div>
     <div id="beta-badge" style="display:none;margin:8px auto 0;width:fit-content;padding:3px 12px;border-radius:12px;background:linear-gradient(135deg,#ff9800,#f57c00);color:#fff;font-size:11px;font-weight:800;letter-spacing:1.5px;box-shadow:0 2px 8px rgba(245,124,0,.35)">BETA-VERSION</div>
   </div>
@@ -486,6 +511,7 @@ input,select,button{font-family:'DM Sans',sans-serif}
       <button class="ibtn" style="margin-left:auto" id="btn-result"><span class="ibtn-ico">📊</span><span class="ibtn-lbl">Ergebnis</span></button>
       <button class="ibtn" id="btn-total" style="display:none;background:linear-gradient(135deg,#e65100,#f57c00);border-color:#e65100"><span class="ibtn-ico">🏆</span><span class="ibtn-lbl" style="color:#fff">Gesamt</span></button>
       <button class="ibtn" id="btn-setup"><span class="ibtn-ico">⚙️</span><span class="ibtn-lbl">Setup</span></button>
+      <button class="ibtn" id="btn-tv" style="background:linear-gradient(135deg,#0f2027,#203a43);border-color:#0f2027"><span class="ibtn-ico">📺</span><span class="ibtn-lbl">TV</span></button>
       <button class="ibtn" id="btn-home"><span class="ibtn-ico">🏠</span><span class="ibtn-lbl">Lobby</span></button>
     </div>
   </div>
@@ -868,7 +894,7 @@ var CLEANUP_DAYS=30;
 var CLEANUP_PROTECT='';
 var IS_ADMIN_VIEW=false;
 var CMARK=Array(18).fill(null),MARK_ID=null,Z_SLOT='self';
-console.log('BUILD 2026-07-27c');
+console.log('BUILD 2026-07-28a');
 // ==== SERVICE WORKER: network-first Auslieferung + Offline-Start ====
 (function(){
   if(!('serviceWorker' in navigator))return;
@@ -1091,6 +1117,10 @@ document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('btn-setup').addEventListener('click',async function(){if(await canOpenSetup()){showView('setup');renderSetupAccess();}});
   document.getElementById('btn-close-round-setup').addEventListener('click',async function(){await closeRound();initSetup();});
   document.getElementById('btn-home').addEventListener('click',goLobby);
+  document.getElementById('btn-tv').addEventListener('click',tvOpen);
+  document.getElementById('tv-back-btn').addEventListener('click',tvClose);
+  document.getElementById('tv-stage').addEventListener('click',tvShowBack);
+  document.getElementById('tv-screen').addEventListener('click',function(e){if(e.target.id==='tv-screen')tvShowBack();});
   document.getElementById('btn-close-round').addEventListener('click',function(){if(!IS_ADMIN_VIEW){toast('⚠️ Nur über die Admin-Seite möglich');return;}closeRound();});
   ['brutto','netto','stableford'].forEach(function(m){document.getElementById('mb-'+m).addEventListener('click',function(){setLbMode(m);});});
   document.getElementById('tab-einzel').addEventListener('click',function(){setLbView('einzel');});
@@ -1713,7 +1743,80 @@ window.addEventListener('offline',function(){syncDot('off');});
 function setLbMode(m){LBM=m;['brutto','netto','stableford'].forEach(function(x){document.getElementById('mb-'+x).classList.toggle('active',x===m);});document.getElementById('lb-score-head').textContent={brutto:'BRUTTO',netto:'NETTO',stableford:'STBL.'}[m];renderLB();}
 function setLbView(v){LBV=v;document.getElementById('tab-einzel').classList.toggle('active',v==='einzel');document.getElementById('tab-team').classList.toggle('active',v==='team');document.getElementById('lb-col-head').style.display=v==='einzel'?'grid':'none';document.getElementById('lb-list').style.display=v==='einzel'?'block':'none';document.getElementById('team-view').style.display=v==='team'?'block':'none';if(v==='team')renderTeamView();}
 function setTM(m){TM=m;document.getElementById('tmt-bb').classList.toggle('active',m==='bestball');document.getElementById('tmt-agg').classList.toggle('active',m==='aggregat');renderTeamView();}
-function renderLB(){
+// ================= LIVE-TV-SCREEN =================
+var TV_ON=false, TV_TIMER=null, TV_PAGE=0, TV_BACK_TIMER=null, TV_PER=6;
+function tvOpen(){
+  if(!CODE){toast("\u26a0\ufe0f Erst einem Turnier beitreten");return;}
+  TV_ON=true;TV_PAGE=0;
+  document.getElementById("tv-screen").classList.add("on");
+  tvRender();
+  if(TV_TIMER)clearInterval(TV_TIMER);
+  TV_TIMER=setInterval(tvRotate,9000);
+  tvShowBack();
+  if(document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(function(){});
+}
+function tvClose(){
+  TV_ON=false;
+  if(TV_TIMER){clearInterval(TV_TIMER);TV_TIMER=null;}
+  document.getElementById("tv-screen").classList.remove("on");
+  if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(function(){});
+}
+function tvShowBack(){
+  var b=document.getElementById("tv-back");if(!b)return;
+  b.classList.add("show");
+  if(TV_BACK_TIMER)clearTimeout(TV_BACK_TIMER);
+  TV_BACK_TIMER=setTimeout(function(){b.classList.remove("show");},3500);
+}
+function tvRotate(){
+  var stage=document.getElementById("tv-stage");if(!stage)return;
+  stage.classList.add("fade");
+  setTimeout(function(){TV_PAGE++;tvRender();stage.classList.remove("fade");},500);
+}
+function tvSorted(){
+  var r=G.round||{},isSB=(r.mode==="stableford_brutto");
+  return G.players.map(enrich).sort(function(a,b){
+    if(LBM==="stableford"||isSB){var av=isSB?a.stpB:a.stp,bv=isSB?b.stpB:b.stp;if(av==null&&bv==null)return 0;if(av==null)return 1;if(bv==null)return -1;return bv-av;}
+    if(LBM==="netto"){if(a.nvp==null&&b.nvp==null)return 0;if(a.nvp==null)return 1;if(b.nvp==null)return -1;return a.nvp-b.nvp;}
+    if(a.bvp==null&&b.bvp==null)return 0;if(a.bvp==null)return 1;if(b.bvp==null)return -1;return a.bvp-b.bvp;
+  });
+}
+function tvScoreVal(p){
+  var r=G.round||{},isSB=(r.mode==="stableford_brutto");
+  if(LBM==="stableford"||isSB){var v=isSB?p.stpB:p.stp;return v!=null?v+"":"\u2013";}
+  if(LBM==="netto")return p.nvp!=null?fmt(p.nvp):"\u2013";
+  return p.bvp!=null?fmt(p.bvp):"\u2013";
+}
+function tvModeLabel(){var r=G.round||{};if(r.mode==="stableford_brutto")return "Stableford Brutto";return LBM==="netto"?"Netto":(LBM==="stableford"?"Stableford":"Brutto");}
+function tvRender(){
+  if(!TV_ON)return;
+  var stage=document.getElementById("tv-stage");if(!stage)return;
+  var r=G.round||{},par=(r.par||DPAR);
+  var sorted=tvSorted();
+  var pages=Math.max(1,Math.ceil(sorted.length/TV_PER));
+  if(TV_PAGE>=pages)TV_PAGE=0;
+  var slice=sorted.slice(TV_PAGE*TV_PER,TV_PAGE*TV_PER+TV_PER);
+  var parSum=par.reduce(function(a,b){return a+(Number(b)||0);},0);
+  var rows=slice.map(function(p,idx){
+    var rank=TV_PAGE*TV_PER+idx+1;
+    var medal=rank===1?"\ud83e\udd47":rank===2?"\ud83e\udd48":rank===3?"\ud83e\udd49":null;
+    var sub=[];if(p.pl>0)sub.push(p.pl+"/18 Loch");
+    return '<div class="tv-row'+(rank===1?" lead":"")+'">'
+      +'<div class="tv-rank">'+(medal?'<span class="medal">'+medal+'</span>':rank)+'</div>'
+      +'<div><div class="tv-name">'+esc(p.name)+'</div>'+(sub.length?'<div class="tv-namesub">'+sub.join(" \u00b7 ")+'</div>':'')+'</div>'
+      +'<div class="tv-score">'+tvScoreVal(p)+'</div>'
+    +'</div>';
+  }).join("");
+  if(!slice.length)rows='<div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:clamp(20px,3vw,40px);color:#8fa8b2">Noch keine Ergebnisse</div>';
+  stage.innerHTML='<div class="tv-eyebrow"><span class="tv-live-dot"></span>Live \u00b7 '+tvModeLabel()+(pages>1?' \u00b7 Seite '+(TV_PAGE+1)+'/'+pages:'')+'</div>'
+    +'<div class="tv-title">'+esc(r.courseName||"Turnier")+'</div>'
+    +'<div class="tv-meta">Par '+parSum+' \u00b7 '+(G.players.length)+' Spieler \u00b7 Code '+(CODE||"")+'</div>'
+    +'<div class="tv-lb">'+rows+'</div>';
+  var dots=document.getElementById("tv-dots");
+  if(dots)dots.innerHTML=pages>1?Array.apply(null,{length:pages}).map(function(_,i){return '<span class="'+(i===TV_PAGE?"on":"")+'"></span>';}).join(""):"";
+}
+function tvLiveRefresh(){if(TV_ON)tvRender();}
+
+function renderLB(){ if(typeof TV_ON!=='undefined'&&TV_ON)setTimeout(tvLiveRefresh,0);
   var r=G.round,par=r.par||DPAR;
   document.getElementById('lb-course-name').textContent=r.courseName||'–';applyTournamentLogo();
   document.getElementById('lb-course-meta').textContent=(r.date||'')+' · Par '+par.reduce(function(a,b){return a+b;},0)+' · '+modeName(r)+(r.tee?' · '+r.tee:'')+(r.teamMode&&r.teamMode!=='none'?' · '+(r.teamMode==='americans'?'Americans':'Teams'):'');
@@ -2539,7 +2642,7 @@ function copyText(text){if(navigator.clipboard){navigator.clipboard.writeText(te
 
 // ════ SETUP ════
 function initSetup(){
-  STEES=[];
+  STEES=migrateTees(G.round.tees||[]);
   SP=G.players.map(function(p){return ensurePid(Object.assign({},p));});SPAR=(G.round.par||DPAR).slice();SSI=(G.round.strokeIndex||DSI).slice();SAC=null;SAT=null;STM=G.round.teamMode||'none';
   var hint=document.getElementById('setup-trn-hint'),titleEl=document.getElementById('setup-title');
   if(G.tournament&&G.tournament.totalRounds>1){
@@ -2786,7 +2889,8 @@ async function saveSetup(){
   if(rMode==='zaehlen_fix'){var msv=document.getElementById('max-score-val');maxScore=parseInt(msv&&msv.value)||8;}
   var gv=function(id){var el=document.getElementById(id);return el?el.checked:false;};
   var notifSettings={hio:gv('notif-hio'),eagle:gv('notif-eagle'),birdie:gv('notif-birdie'),par:gv('notif-par'),bogey:gv('notif-bogey'),double:gv('notif-double'),bv:gv('notif-bv'),lady:gv('notif-lady'),putt3:gv('notif-putt3'),scorelog:gv('notif-scorelog')};
-  G.round={courseName:cname,par:SPAR,strokeIndex:SSI,tee:tee,date:document.getElementById('r-date').value||tod(),mode:rMode,maxScore:maxScore,teamMode:STM,longestDrive:(parseInt(document.getElementById('longest-drive-hole').value)||0),options:{ballverlust:gv('opt-ballverlust'),ladies:gv('opt-ladies'),notif:gv('opt-notif'),notifSettings:notifSettings,zaehler:gv('opt-zaehler')}};
+  var roundTees=collectTees();
+  G.round={courseName:cname,par:SPAR,strokeIndex:SSI,tees:roundTees,tee:tee,date:document.getElementById('r-date').value||tod(),mode:rMode,maxScore:maxScore,teamMode:STM,longestDrive:(parseInt(document.getElementById('longest-drive-hole').value)||0),options:{ballverlust:gv('opt-ballverlust'),ladies:gv('opt-ladies'),notif:gv('opt-notif'),notifSettings:notifSettings,zaehler:gv('opt-zaehler')}};
   // FIX Fund 1: Live-Stand synchron uebernehmen. SP kann veraltet sein (Setup war offen, waehrend live gespielt wurde).
   var liveNow=LIVE_PLAYERS||[];
   SP=SP.map(function(sp){
@@ -3824,5 +3928,10 @@ async function shareAnalyseImage(d,fallbackText,pname){
 }
 function roundRectC(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
 </script>
+<div id="tv-screen">
+  <div id="tv-back"><button id="tv-back-btn">← Zurück</button></div>
+  <div id="tv-stage"></div>
+  <div class="tv-dots" id="tv-dots"></div>
+</div>
 </body>
 </html>
