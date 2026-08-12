@@ -3275,10 +3275,12 @@ function fkSave(){
   var p=G.players.find(function(x){return x.id===CID;});if(!p)return;
   if(!Array.isArray(p.fkShots))p.fkShots=[];
   p.fkShots.push({hole:FK_HOLE,club:FK_CLUB.club,maxM:FK_MAXM,dx:Math.round(FK_DX*100)/100,dy:Math.round(FK_DY*100)/100,t:Date.now()});
-  // lokal + Sync über bestehende Karte-Speicherung
-  if(typeof saveLoc==="function")saveLoc();
-  if(typeof pushFB==="function"){try{pushFB();}catch(e){}}
-  toast("\ud83c\udfcc\ufe0f Schlag gespeichert");
+  // FUNKLOCH-FEST: sofort lokal sichern, dann (falls online) synchronisieren
+  if(typeof saveLoc==="function")saveLoc(CID,CS);           // Score-Puffer
+  if(typeof saveTrnSnapshot==="function"){try{saveTrnSnapshot();}catch(e){}} // fkShots im Offline-Schnappschuss
+  if(typeof pushFB==="function"){try{pushFB();}catch(e){}}  // Server-Sync (no-op wenn offline, holt später nach)
+  var online=navigator.onLine;
+  toast(online?"\ud83c\udfcc\ufe0f Schlag gespeichert":"\ud83c\udfcc\ufe0f Schlag gespeichert (offline)");
   fkClose();
 }
 
